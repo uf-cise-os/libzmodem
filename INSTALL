@@ -1,0 +1,6 @@
+To install:
+
+1) Check the Makefile to make sure the install directories are correct for your
+system.
+2) 'make linux'
+3) Run 'testlrzsz' to test lrzsz through a named pipe
