@@ -1,6 +1,0 @@
-#!/bin/bash
-# Remove the symlinks so dpkg doesn't choke if they exist
-
-for link in lrb lrx lsb lsx; do
-	rm -f /usr/bin/${link}
-done

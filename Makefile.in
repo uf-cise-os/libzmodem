@@ -79,7 +79,7 @@ install-strip:
 
 install-programs:
 	for i in $(PROGRAMS) ; do \
-	  $(INSTALL_PROGRAM) -m755 $$i $(bindir)/`echo $$p |sed '$(transform)'` ;\
+	  $(INSTALL_PROGRAM) -m755 $$i $(bindir)/`echo $$i |sed '$(transform)'` ;\
 	done
 	( cd $(bindir) ; \
 	  $(LN_S) -f `echo lrz|sed '$(transform)'` `echo lrb|sed '$(transform)'` ;\

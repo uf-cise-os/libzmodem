@@ -1,0 +1,10 @@
+lrzsz (0.12b-1) unstable; urgency=low
+
+  * Converted to new source packaging format.
+  * New upstream version.
+
+ -- Michael Alan Dorman <mdorman@calder.med.miami.edu>  Tue, 17 Sep 1996 13:39:23 -0400
+
+Local variables:
+mode: debian-changelog
+End:

@@ -1,0 +1,58 @@
+#!/usr/bin/make -f
+
+package=lrzsz
+
+tmpdir = $(shell pwd)/debian/tmp
+instdirs = $(tmpdir) \
+	$(tmpdir)/DEBIAN \
+	$(tmpdir)/usr/bin \
+	$(tmpdir)/usr/doc/lrzsz \
+	$(tmpdir)/usr/man/man1
+
+build:
+	$(checkdir)
+	CFLAGS=-O2 LDFLAGS= ./configure --program-transform-name=s/l//
+	$(MAKE) 
+	touch build
+
+clean:
+	$(checkdir)
+	-rm -f build
+	-$(MAKE) distclean
+	-rm -rf *~ debian/tmp debian/*~ debian/files*
+
+binary-indep:  checkroot build
+	$(checkdir)
+
+binary-arch:	checkroot build $(instdirs)
+	dpkg-shlibdeps lsz
+	dpkg-gencontrol >debian/tmp/DEBIAN/control
+	$(MAKE) INSTALL_PROGRAM='install -c -s' prefix=$(tmpdir)/usr install
+	install -m 644 debian/copyright $(tmpdir)/usr/doc/$(package)/copyright
+	chown -R root.root $(tmpdir)
+	chmod -R g-ws $(tmpdir)
+	dpkg --build $(tmpdir) ..
+
+define checkdir
+	test -f debian/rules
+endef
+
+# Below here is fairly generic really
+
+binary:		binary-indep binary-arch
+
+source diff:
+	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
+
+checkroot:
+	$(checkdir)
+	test root = "`whoami`"
+
+.PHONY: binary diff clean checkroot zapdirs
+
+zapdirs:
+	-rm -rf $(tmpdir)
+
+$(instdirs): zapdirs
+	install -d -m 755 $@
+	chmod g-s $@

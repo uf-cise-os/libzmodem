@@ -1,0 +1,10 @@
+Source: lrzsz
+Maintainer: Michael Alan Dorman <mdorman@debian.org>
+Standards-Version: 0.1
+
+Package: lrzsz
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: zmodem/ymodem/xmodem transfer package
+ lrzsz is based on the last public domain release of rzsz, combined
+ with some modifications to the output routines.
