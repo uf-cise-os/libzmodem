@@ -18,11 +18,6 @@
 int Rxtimeout = 100;		/* Tenths of seconds to wait for something */
 #endif
 
-#ifndef UNSL
-#define UNSL
-#endif
-
-
 /* Globals used by ZMODEM functions */
 int Rxframeind;		/* ZBIN ZBIN32, or ZHEX type of frame received */
 int Rxtype;		/* Type of header received */
@@ -72,6 +67,47 @@ static char *frametypes[] = {
 
 static char badcrc[] = "Bad CRC";
 
+static void zsendline_init(char *);
+/*
+ * Send character c with ZMODEM escape sequence encoding.
+ *  Escape XON, XOFF. Escape CR following @ (Telenet net escape)
+ */
+void
+#ifdef __GNUC__
+	/* this saves about one function call per 4 Bytes */
+inline
+#endif
+zsendline(int c)
+{
+	static int last_esc=-2;
+	static char tab[256];
+	if (Zctlesc!=last_esc) {
+		zsendline_init(tab);
+		last_esc=Zctlesc;
+	}
+
+	switch(tab[(unsigned) (c&=0377)])
+	{
+	case 0: 
+		xsendline(lastsent = c); 
+		break;
+	case 1:
+		xsendline(ZDLE);
+		c ^= 0100;
+		xsendline(lastsent = c);
+		break;
+	case 2:
+		if ((lastsent & 0177) != '@') {
+			xsendline(lastsent = c);
+		} else {
+			xsendline(ZDLE);
+			c ^= 0100;
+			xsendline(lastsent = c);
+		}
+		break;
+	}
+}
+
 /* Send ZMODEM binary header hdr of type type */
 zsbhdr(type, hdr)
 register char *hdr;
@@ -109,7 +145,7 @@ zsbh32(hdr, type)
 register char *hdr;
 {
 	register int n;
-	register UNSL long crc;
+	register unsigned long crc;
 
 	xsendline(ZBIN32);  zsendline(type);
 	crc = 0xFFFFFFFFL; crc = UPDC32(type, crc);
@@ -131,27 +167,41 @@ register char *hdr;
 {
 	register int n;
 	register unsigned short crc;
+	char s[30];
+	size_t len;
 
 	vfile("zshhdr: %s %lx", frametypes[type+FTOFFSET], rclhdr(hdr));
-	sendline(ZPAD); sendline(ZPAD); sendline(ZDLE); sendline(ZHEX);
-	zputhex(type);
+	s[0]=ZPAD;
+	s[1]=ZPAD;
+	s[2]=ZDLE;
+	s[3]=ZHEX;
+	zputhex(type,s+4);
+	len=6;
 	Crc32t = 0;
 
 	crc = updcrc(type, 0);
 	for (n=4; --n >= 0; ++hdr) {
-		zputhex(*hdr); crc = updcrc((0377 & *hdr), crc);
+		zputhex(*hdr,s+len); 
+		len += 2;
+		crc = updcrc((0377 & *hdr), crc);
 	}
 	crc = updcrc(0,updcrc(0,crc));
-	zputhex(crc>>8); zputhex(crc);
+	zputhex(crc>>8,s+len); 
+	zputhex(crc,s+len+2);
+	len+=4;
 
 	/* Make it printable on remote machine */
-	sendline(015); sendline(0212);
+	s[len++]=015;
+	s[len++]=0212;
 	/*
 	 * Uncork the remote in case a fake XOFF has stopped data flow
 	 */
 	if (type != ZFIN && type != ZACK)
-		sendline(021);
+	{
+		s[len++]=021;
+	}
 	flushmo();
+	write(1,s,len);
 }
 
 /*
@@ -186,7 +236,7 @@ zsda32(buf, length, frameend)
 register char *buf;
 {
 	register int c;
-	register UNSL long crc;
+	register unsigned long crc;
 
 	crc = 0xFFFFFFFFL;
 	for (;--length >= 0; ++buf) {
@@ -202,7 +252,12 @@ register char *buf;
 
 	crc = ~crc;
 	for (length=4; --length >= 0;) {
-		zsendline((int)crc);  crc >>= 8;
+		c=(int) crc;
+		if (c & 0140)
+			xsendline(lastsent = c);
+		else
+			zsendline(c);
+		crc >>= 8;
 	}
 }
 
@@ -268,9 +323,10 @@ zrdat32(buf, length)
 register char *buf;
 {
 	register int c;
-	register UNSL long crc;
+	register unsigned long crc;
 	register char *end;
 	register int d;
+
 
 	crc = 0xFFFFFFFFL;  Rxcount = 0;  end = buf + length;
 	while (buf <= end) {
@@ -474,7 +530,7 @@ register char *hdr;
 		return c;
 	crc = updcrc(c, crc);
 	if (crc & 0xFFFF) {
-		zperr(badcrc);
+		zperr(badcrc); 
 		return ERROR;
 	}
 #ifdef ZMODEM
@@ -489,7 +545,7 @@ zrbhdr32(hdr)
 register char *hdr;
 {
 	register int c, n;
-	register UNSL long crc;
+	register unsigned long crc;
 
 	if ((c = zdlread()) & ~0377)
 		return c;
@@ -574,55 +630,50 @@ char *hdr;
 }
 
 /* Send a byte as two hex digits */
-zputhex(c)
+zputhex(c, pos)
 register int c;
+char *pos;
 {
 	static char	digits[]	= "0123456789abcdef";
 
 	if (Verbose>8)
 		vfile("zputhex: %02X", c);
-	sendline(digits[(c&0xF0)>>4]);
-	sendline(digits[(c)&0xF]);
+	pos[0]=digits[(c&0xF0)>>4];
+	pos[1]=digits[c&0x0F];
 }
 
-/*
- * Send character c with ZMODEM escape sequence encoding.
- *  Escape XON, XOFF. Escape CR following @ (Telenet net escape)
- */
-zsendline(c)
+static void
+zsendline_init(char *tab)
 {
-
-	/* Quick check for non control characters */
-	if (c & 0140)
-		xsendline(lastsent = c);
-	else {
-		switch (c &= 0377) {
-		case ZDLE:
-			xsendline(ZDLE);
-			xsendline (lastsent = (c ^= 0100));
-			break;
-		case 015:
-		case 0215:
-			if (!Zctlesc && (lastsent & 0177) != '@')
-				goto sendit;
-		/* **** FALL THRU TO **** */
-		case 020:
-		case 021:
-		case 023:
-		case 0220:
-		case 0221:
-		case 0223:
-			xsendline(ZDLE);
-			c ^= 0100;
-	sendit:
-			xsendline(lastsent = c);
-			break;
-		default:
-			if (Zctlesc && ! (c & 0140)) {
-				xsendline(ZDLE);
-				c ^= 0100;
+	int i;
+	for (i=0;i<256;i++) {	
+		if (i & 0140)
+			tab[i]=0;
+		else {
+			switch(i)
+			{
+			case ZDLE:
+			case 020:
+			case 021:
+			case 023:
+			case 0220:
+			case 0221:
+			case 0223:
+				tab[i]=1;
+				break;
+			case 015:
+			case 0215:
+				if (Zctlesc)
+					tab[i]=1;
+				else
+					tab[i]=2;
+				break;
+			default:
+				if (Zctlesc)
+					tab[i]=1;
+				else
+					tab[i]=0;
 			}
-			xsendline(lastsent = c);
 		}
 	}
 }
@@ -669,7 +720,7 @@ zdlread()
 
 again:
 	/* Quick check for non control characters */
-	if ((c = readline(Rxtimeout)) & 0140)
+	if ((c = READLINE_PF(Rxtimeout)) & 0140)
 		return c;
 	switch (c) {
 	case ZDLE:
@@ -686,13 +737,13 @@ again:
 		return c;
 	}
 again2:
-	if ((c = readline(Rxtimeout)) < 0)
+	if ((c = READLINE_PF(Rxtimeout)) < 0)
 		return c;
-	if (c == CAN && (c = readline(Rxtimeout)) < 0)
+	if (c == CAN && (c = READLINE_PF(Rxtimeout)) < 0)
 		return c;
-	if (c == CAN && (c = readline(Rxtimeout)) < 0)
+	if (c == CAN && (c = READLINE_PF(Rxtimeout)) < 0)
 		return c;
-	if (c == CAN && (c = readline(Rxtimeout)) < 0)
+	if (c == CAN && (c = READLINE_PF(Rxtimeout)) < 0)
 		return c;
 	switch (c) {
 	case CAN:

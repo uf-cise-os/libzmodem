@@ -12,36 +12,42 @@
  *   See the main files (rz.c/sz.c) for compile instructions.
  */
 
-#ifdef V7
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sgtty.h>
-#define OS "V7/BSD"
-#ifdef LLITOUT
+
+#ifdef HAVE_TERMIO_H
+#  include <termio.h>
+#  define USE_TERMIO
+#  define MODE2OK
+#elif defined(HAVE_SYS_TERMIO_H)
+#  include <sys/termio.h>
+#  define USE_TERMIO
+#  define MODE2OK
+#elif defined(HAVE_SGTTY_H)
+#  include <sgtty.h>
+#  define USE_SGTTY
+#  ifdef LLITOUT
 long Locmode;		/* Saved "local mode" for 4.x BSD "new driver" */
 long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
-#include <strings.h>
-#endif
-#endif
-
-#ifndef OS
-#ifndef USG
-#define USG
-#endif
+#  endif
+#else
+#  error neither termio.h nor sgtty.h found. Cannot continue.
 #endif
 
-#ifdef USG
+#ifdef HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <termio.h>
-#include <sys/ioctl.h>
-#define OS "SYS III/V"
-#define MODE2OK
-#include <string.h>
-#endif
 
 #if HOWMANY  > 255
+#ifndef NFGVMIN
 Howmany must be 255 or less
+#endif
 #endif
 
 /*
@@ -52,12 +58,16 @@ Howmany must be 255 or less
 int Fromcu;		/* Were called from cu or yam */
 from_cu()
 {
+#ifdef HAVE_ST_RDEV
 	struct stat a, b;
+	a.st_rdev=b.st_rdev=0; /* in case fstat fails */
 
 	fstat(1, &a); fstat(2, &b);
 
 	Fromcu = a.st_rdev != b.st_rdev;
-
+#else
+	Fromcu = 1; /* a bad guess .. */
+#endif
 	return;
 }
 cucheck()
@@ -100,9 +110,10 @@ rdchk(f)
 	return ((int) lf);
 }
 #endif
-#ifdef SV
+
+#if !defined(READCHECK) && defined(F_GETFL)
 #define READCHECK
-#include <fcntl.h>
+#define READCHECK_READS
 
 char checked = '\0' ;
 /*
@@ -135,7 +146,7 @@ getspeed(code)
 
 
 
-#ifdef ICANON
+#ifdef USE_TERMIO
 struct termio oldtty, tty;
 #else
 struct sgttyb oldtty, tty;
@@ -157,7 +168,7 @@ mode(n)
 
 	vfile("mode:%d", n);
 	switch(n) {
-#ifdef USG
+#ifdef USE_TERMIO
 	case 2:		/* Un-raw mode used by sz, sb when -g detected */
 		if(!did0)
 			(void) ioctl(iofd, TCGETA, &oldtty);
@@ -219,7 +230,7 @@ mode(n)
 		Baudrate = getspeed(tty.c_cflag & CBAUD);
 		return OK;
 #endif
-#ifdef V7
+#ifdef USE_SGTTY
 	/*
 	 *  NOTE: this should transmit all 8 bits and at the same time
 	 *   respond to XOFF/XON flow control.  If no FIONREAD or other
@@ -274,18 +285,21 @@ mode(n)
 	case 0:
 		if(!did0)
 			return ERROR;
-#ifdef USG
+#ifdef USE_TERMIO
 		(void) ioctl(iofd, TCSBRK, 1);	/* Wait for output to drain */
-		(void) ioctl(iofd, TCFLSH, 1);	/* Flush input queue */
+		(void) ioctl(iofd, TCFLSH, 0);	/* Flush input queue */
 		(void) ioctl(iofd, TCSETAW, &oldtty);	/* Restore modes */
 		(void) ioctl(iofd, TCXONC,1);	/* Restart output */
 #endif
-#ifdef V7
+#ifdef USE_SGTTY
 		ioctl(iofd, TIOCSETP, &oldtty);
 		ioctl(iofd, TIOCSETC, &oldtch);
 		ioctl(iofd, TIOCNXCL, 0);
 #ifdef LLITOUT
 		ioctl(iofd, TIOCLSET, &Locmode);
+#endif
+#ifdef TIOCFLUSH
+		{ int x=1; ioctl(iofd,TIOCFLUSH,&x); }
 #endif
 #endif
 
@@ -297,7 +311,7 @@ mode(n)
 
 sendbrk()
 {
-#ifdef V7
+#ifdef USE_SGTTY
 #ifdef TIOCSBRK
 #define CANBREAK
 	sleep(1);
@@ -306,7 +320,7 @@ sendbrk()
 	ioctl(iofd, TIOCCBRK, 0);
 #endif
 #endif
-#ifdef USG
+#ifdef USE_TERMIO
 #define CANBREAK
 	ioctl(iofd, TCSBRK, 0);
 #endif

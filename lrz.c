@@ -1,6 +1,3 @@
-#define VERSION "0.11"
-#define PUBDIR "/usr/spool/uucppublic"
-
 /* lrz.c cosmetic modifications by Matt Porter
  * from rz.c By Chuck Forsberg
  * 
@@ -8,17 +5,44 @@
  *  zmodem, ymodem, or xmodem protocols.
  *  lrz uses Unix buffered input to reduce wasted CPU time.
  *
- *  -DMD may be added to compiler command line to compile in
- *    Directory-creating routines from Public Domain TAR by John Gilmore
  */
+
+#include "config.h"
+
+#if STDC_HEADERS
+# include <string.h>
+#else
+# ifdef HAVE_STRINGS_H
+#   include <strings.h>
+# endif
+# ifndef HAVE_STRCHR
+#  define strchr index
+#  define strrchr rindex
+# endif
+char *strchr (), *strrchr ();
+# ifndef HAVE_MEMCPY
+#  define memcpy(d, s, n) bcopy ((s), (d), (n))
+#  define memmove(d, s, n) bcopy ((s), (d), (n))
+# endif
+#endif
 
 #define SS_NORMAL 0
 #define LOGFILE "/var/adm/rzlog"
 #include <stdio.h>
+#include <stdlib.h>
 #include <signal.h>
-#include <setjmp.h>
 #include <ctype.h>
 #include <errno.h>
+#ifdef TIME_WITH_SYS_TIME
+#  include <sys/time.h>
+#  include <time.h>
+#else
+#  ifdef HAVE_SYS_TIME_H
+#    include <sys/time.h>
+#  else
+#    include <time.h>
+#  endif
+#endif
 #include "timing.h"
 extern int errno;
 FILE *popen();
@@ -28,13 +52,19 @@ FILE *popen();
 #define TRUE 1
 #define ERROR (-1)
 
+#define MAX_BLOCK 8192
+
 /*
- * Max value for HOWMANY is 255.
+ * Max value for HOWMANY is 255 if NFGVMIN is not defined.
  *   A larger value reduces system overhead but may evoke kernel bugs.
  *   133 corresponds to an XMODEM/CRC sector
  */
 #ifndef HOWMANY
-#define HOWMANY 133
+#ifdef NFGVMIN
+#define HOWMANY MAX_BLOCK
+#else
+#define HOWMANY 255
+#endif
 #endif
 
 /* Ward Christensen / CP/M parameters - Don't change these! */
@@ -64,7 +94,6 @@ unsigned Baudrate = 2400;
 
 #include "crctab.c"
 
-char *substr();
 FILE *fout;
 
 /*
@@ -81,13 +110,8 @@ int Crcflg;
 int Firstsec;
 int Eofseen;		/* indicates cpm eof (^Z) has been received */
 int errors;
-int Restricted=0;	/* restricted; no /.. or ../ in filenames */
-#ifdef ONEREAD
-/* Sorry, Regulus and some others don't work right in raw mode! */
-int Readnum = 1;	/* Number of bytes to ask for in read() from modem */
-#else
+int Restricted=1;	/* restricted; no /.. or ../ in filenames */
 int Readnum = HOWMANY;	/* Number of bytes to ask for in read() from modem */
-#endif
 
 #define DEFBYTL 2000000000L	/* default rx file size */
 long Bytesleft;		/* number of bytes of incoming file left */
@@ -107,14 +131,22 @@ int Rxbinary=FALSE;	/* receive all files in bin mode */
 int Rxascii=FALSE;	/* receive files in ascii (translate) mode */
 int Thisbinary;		/* current file is to be received in bin mode */
 int Blklen;		/* record length of received packets */
+long rxbytes;
+int try_resume=FALSE;
+int allow_remote_commands=FALSE;
+int no_timeout=FALSE;
 
 #ifdef SEGMENTS
 int chinseg = 0;	/* Number of characters received in this data seg */
-char secbuf[1+(SEGMENTS+1)*1024];
+char secbuf[1+(SEGMENTS+1)*MAX_BLOCK];
 #else
-char secbuf[1025];
+char secbuf[MAX_BLOCK + 1];
 #endif
 
+#ifdef ENABLE_TIMESYNC
+int timesync_flag=0;
+int in_timesync=0;
+#endif
 
 char linbuf[HOWMANY];
 int Lleft=0;		/* number of characters in linbuf */
@@ -126,24 +158,24 @@ char ztrans;		/* ZMODEM file transport request */
 int Zctlesc;		/* Encode control characters */
 int Zrwindow = 1400;	/* RX window size (controls garbage count) */
 
-jmp_buf tohere;		/* For the interrupt on RX timeout */
-
 #define xsendline(c) sendline(c)
+
+char *readline_ptr;	/* pointer for removing chars from linbuf */
+#define READLINE_PF(timeout) \
+	(--Lleft >= 0? (*readline_ptr++ & 0377) : readline(timeout))
+
 #include "zm.c"
 
 int tryzhdrtype=ZRINIT;	/* Header type to send corresponding to Last rx close */
-#ifdef LINUX
-void
-#endif
-alrm(int signum)
+
+RETSIGTYPE
+alrm(int dummy)
 {
-	longjmp(tohere, signum);
+	/* doesn't need to do anything */
 }
 
 /* called by signal interrupt or terminate to clean things up */
-#ifdef LINUX
-void
-#endif
+RETSIGTYPE
 bibi(n)
 {
 	if (Zmodem)
@@ -161,12 +193,16 @@ char *argv[];
 	register npats;
 	char *virgin, **patts;
 	char *getenv();
-	int exitcode;
+	int exitcode=0;
+	int under_rsh=FALSE;
 
 	Rxtimeout = 100;
 	setbuf(stderr, NULL);
-	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
-		Restricted=TRUE;
+	if ((cp=getenv("SHELL")) && (strstr(cp, "rsh") || strstr(cp, "rksh")
+		|| strstr(cp,"rbash")))
+		under_rsh=TRUE;
+	if ((cp=getenv("ZMODEM_RESTRICTED"))!=NULL)
+		Restricted=2;
 
 	from_cu();
 	chkinvok(virgin=argv[0]);	/* if called as [-]rzCOMMAND set flag */
@@ -186,16 +222,36 @@ char *argv[];
 					Rxbinary=TRUE; break;
 				case 'c':
 					Crcflg=TRUE; break;
+				case 'C':
+					allow_remote_commands=TRUE; break;
 				case 'D':
 					Nflag = TRUE; break;
 				case 'e':
 					Zctlesc = 1; break;
 				case 'h':
 					usage(); break;
+				case 'O': 
+					no_timeout=TRUE; break;
 				case 'p':
 					Lzmanag = ZMPROT;  break;
 				case 'q':
 					Quiet=TRUE; Verbose=0; break;
+				case 'r':
+					try_resume=TRUE;  break;
+				case 'R':
+					Restricted++;  break;
+				case 'S':
+#ifdef ENABLE_TIMESYNC
+					timesync_flag++;
+					if (timesync_flag==2) {
+#ifdef HAVE_SETTIMEOFDAY
+	fputs("don't have settimeofday, will not set time\n", stderr);
+#endif
+						if (getuid()!=0)
+	fputs("not running as root (this is good!), can not set time\n", stderr);
+					}
+#endif
+					break;
 				case 't':
 					if (--argc < 1) {
 						usage();
@@ -212,6 +268,14 @@ char *argv[];
 					break;
 				case 'u':
 					MakeLCPathname=FALSE; break;
+				case 'U':
+					if (!under_rsh)
+						Restricted=0;
+					else {
+	fputs("security violation: running under restricted shell\n", stderr);
+						exit(1);
+					}
+					break;
 				case 'v':
 					++Verbose; break;
 				case 'y':
@@ -232,11 +296,13 @@ char *argv[];
 		usage();
 	if (Batch && npats)
 		usage();
+	if (Restricted && allow_remote_commands)
+		allow_remote_commands=FALSE;
 	if (Verbose) {
 #if 0
 		if (freopen(LOGFILE, "a", stderr)==NULL) {
 			printf("Can't open log file %s\n",LOGFILE);
-			exit(0200);
+			exit(1);
 		}
 		fprintf(stderr, "argv[0]=%s Progname=%s\n", virgin, Progname);
 #endif
@@ -248,7 +314,7 @@ char *argv[];
 	}
 	vfile("%s %s for %s\n", Progname, VERSION, OS);
 	mode(1);
-
+#ifndef linux
 	if (signal(SIGINT, bibi) == SIG_IGN) {
 		signal(SIGINT, SIG_IGN); signal(SIGKILL, SIG_IGN);
 	}
@@ -256,7 +322,7 @@ char *argv[];
 		signal(SIGINT, bibi); signal(SIGKILL, bibi);
 	}
 	signal(SIGTERM, bibi);
-
+#endif
 	if (wcreceive(npats, patts)==ERROR) {
 		exitcode=0200;
 		canit();
@@ -273,18 +339,19 @@ char *argv[];
 usage()
 {
 	cucheck();
-	fprintf(stderr,"Usage:	lrz [-abeuvy]		(ZMODEM)\n");
-	fprintf(stderr,"or	lrb [-abuvy]		(YMODEM)\n");
-	fprintf(stderr,"or	lrx [-abcv] file	(XMODEM or XMODEM-1k)\n");
+	fprintf(stderr,"Usage: lrz [-abeuvy] [-L FILE] (ZMODEM)\n");
+	fprintf(stderr,"or     lrb [-abuvy] [-L FILE]      (YMODEM)\n");
+	fprintf(stderr,"or     lrx [-abcv] [-L FILE] file  (XMODEM or XMODEM-1k)\n");
 	fprintf(stderr,"	  -a ASCII transfer (strip CR)\n");
 	fprintf(stderr,"	  -b Binary transfer for all files\n");
 	fprintf(stderr,"	  -c Use 16 bit CRC	(XMODEM)\n");
 	fprintf(stderr,"	  -e Escape control characters	(ZMODEM)\n");
 	fprintf(stderr,"          -h Help, print this usage message\n");
+	fprintf(stderr,"	  -R restricted, more secure mode\n");
 	fprintf(stderr,"	  -v Verbose more v's give more info\n");
 	fprintf(stderr,"	  -y Yes, clobber existing file if any\n");
-	fprintf(stderr,"\t%s %s for Debian GNU/Linux\n",
-	  Progname, VERSION);
+	fprintf(stderr,"\t%s version %s for %s %s\n",
+	  Progname, VERSION, CPU, OS);
 	exit(SS_NORMAL);
 }
 /*
@@ -560,34 +627,34 @@ readline(timeout)
 int timeout;
 {
 	register n;
-	static char *cdq;	/* pointer for removing chars from linbuf */
+#ifndef READLINE_PF
+	static char *readline_ptr;	/* pointer for removing chars from linbuf */
+#endif
 
 	if (--Lleft >= 0) {
 		if (Verbose > 8) {
-			fprintf(stderr, "%02x ", *cdq&0377);
+			fprintf(stderr, "%02x ", *readline_ptr&0377);
 		}
-		return (*cdq++ & 0377);
-	}
-	n = timeout/10;
-	if (n < 2)
-		n = 3;
-	if (Verbose > 5)
-		fprintf(stderr, "Calling read: alarm=%d  Readnum=%d ",
-		  n, Readnum);
-	if (setjmp(tohere)) {
-#ifdef TIOCFLUSH
-/*		ioctl(iofd, TIOCFLUSH, 0); */
-#endif
-		Lleft = 0;
-		if (Verbose>1)
-			fprintf(stderr, "Readline:TIMEOUT\n");
-		return TIMEOUT;
+		return (*readline_ptr++ & 0377);
 	}
 
-	signal(SIGALRM, alrm); alarm(n);
+	if (!no_timeout)
+	{
+		n = timeout/10;
+		if (n < 2)
+			n = 3;
+		if (Verbose > 5)
+			fprintf(stderr, "Calling read: alarm=%d  Readnum=%d ",
+			  n, Readnum);
+		signal(SIGALRM, alrm); alarm(n);
+	}
+	else if (Verbose > 5)
+		fprintf(stderr, "Calling read: Readnum=%d ",
+		  Readnum);
 
-	Lleft=read(iofd, cdq=linbuf, Readnum);
-	alarm(0);
+	Lleft=read(iofd, readline_ptr=linbuf, Readnum);
+	if (!no_timeout)
+		alarm(0);
 	if (Verbose > 5) {
 		fprintf(stderr, "Read returned %d bytes\n", Lleft);
 	}
@@ -595,9 +662,9 @@ int timeout;
 		return TIMEOUT;
 	--Lleft;
 	if (Verbose > 8) {
-		fprintf(stderr, "%02x ", *cdq&0377);
+		fprintf(stderr, "%02x ", *readline_ptr&0377);
 	}
-	return (*cdq++ & 0377);
+	return (*readline_ptr++ & 0377);
 }
 
 
@@ -608,7 +675,7 @@ int timeout;
 purgeline()
 {
 	Lleft = 0;
-#ifdef USG
+#ifdef TCFLSH
 	ioctl(iofd, TCFLSH, 0);
 #else
 	lseek(iofd, 0L, 2);
@@ -621,7 +688,7 @@ purgeline()
 procheader(name)
 char *name;
 {
-        register char *openmode, *p, **pp;
+	register char *openmode, *p, **pp;
 	int tabs, tab_num;
 
 	/* set default parameters and overrides */
@@ -639,13 +706,21 @@ char *name;
 		Thisbinary = TRUE;
 	else if (zmanag == ZMAPND)
 		openmode = "a";
+	if (Thisbinary && zconv == ZCBIN && try_resume)
+		zconv=ZCRESUM;
 
-#ifndef BIX
+#ifdef ENABLE_TIMESYNC
+	in_timesync=0;
+	if (timesync_flag && 0==strcmp(name,"$time$.t"))
+		in_timesync=1;
+#endif
 	/* Check for existing file */
-	if (!Rxclob && (zmanag&ZMMASK) != ZMCLOB && (fout=fopen(name, "r"))) {
+	if (zconv != ZCRESUM && !Rxclob && (zmanag&ZMMASK) != ZMCLOB && (fout=fopen(name, "r"))) {
+#ifdef ENABLE_TIMESYNC
+	    if (!in_timesync)
+#endif
 		fclose(fout);  return ERROR;
 	}
-#endif
 
 	Bytesleft = DEFBYTL; Filemode = 0; Modtime = 0L;
 
@@ -654,15 +729,7 @@ char *name;
 		sscanf(p, "%ld%lo%o", &Bytesleft, &Modtime, &Filemode);
 		if (Filemode & UNIXFILE)
 			++Thisbinary;
-	}
-
-#ifdef BIX
-	if ((fout=fopen("scratchpad", openmode)) == NULL)
-		return ERROR;
-	return OK;
-#else
-
-	else {		/* File coming from CP/M system */
+	} else {		/* File coming from CP/M system */
 		for (p=name; *p; ++p)		/* change / to _ */
 			if ( *p == '/')
 				*p = '_';
@@ -670,6 +737,32 @@ char *name;
 		if ( *--p == '.')		/* zap trailing period */
 			*p = 0;
 	}
+
+#ifdef ENABLE_TIMESYNC
+	if (in_timesync)
+	{
+		long t=time(0);
+		long d=t-Modtime;
+		if (d<0)
+			d=0;
+		if ((Verbose && d>60) || Verbose > 1)
+			fprintf(stderr,  
+	"TIMESYNC: here %ld, remote %ld, diff %d seconds\n",
+			(long) t, (long) Modtime, (long) d);
+#ifdef HAVE_SETTIMEOFDAY
+		if (timesync_flag > 1 && d > 10)
+		{
+			struct timeval tv;
+			tv.tv_sec=Modtime;
+			tv.tv_usec=0;
+			if (settimeofday(&tv,NULL))
+				fprintf(stderr, "TIMESYNC: cannot set time: %s\n",
+				strerror(errno));
+		}
+#endif
+		return ERROR; /* skips file */
+	}
+#endif /* ENABLE_TIMESYNC */
 
 	if (!Zmodem && MakeLCPathname && !IsAnyLower(name)
 	  && !(Filemode&UNIXFILE))
@@ -683,8 +776,8 @@ char *name;
 			return ERROR;
 	} else {
 		strcpy(Pathname, name);
-                if (Verbose)
-                        fprintf(stderr, "\nReceiving: %s\n", name);
+		if (Verbose)
+			fprintf(stderr, "\nReceiving: %s\n", name);
 		timing(1);
 		checkpath(name);
 		if (Nflag)
@@ -697,22 +790,63 @@ char *name;
 			Topipe = -1;  return(OK);
 		}
 #endif
-#ifdef MD
+		if (Thisbinary && zconv==ZCRESUM) {
+			struct stat st;
+			fout = fopen(name, "r+");
+			if (fout && 0==fstat(fileno(fout),&st))
+			{
+				/* retransfer whole blocks */
+				rxbytes = st.st_size & ~(1024);
+				/* Bytesleft == filelength on remote */
+				if (rxbytes < Bytesleft) {
+					if (fseek(fout, rxbytes, 0)) {
+						fclose(fout);
+						return ZFERR;
+					}
+				}
+				goto buffer_it;
+			}
+			rxbytes=0;
+			if (fout)
+				fclose(fout);
+		}
+#ifdef ENABLE_MKDIR
 		fout = fopen(name, openmode);
-		if ( !fout)
+		if ( !fout && Restricted < 2)
 			if (make_dirs(name))
 				fout = fopen(name, openmode);
 #else
 		fout = fopen(name, openmode);
 #endif
 		if ( !fout)
+		{
+			int e=errno;
+			fprintf(stderr, "lrz: cannot open %s: %s\n", name,
+				strerror(e));
 			return ERROR;
+		}
 	}
+buffer_it:
+	if (Topipe == 0) {
+		static char *s=NULL;
+		if (!s) {
+			s=malloc(16384);
+			if (!s) {
+				fprintf(stderr,"lrz: out of memory\r\n");
+				exit(1);
+			}
+#ifdef SETVBUF_REVERSED
+			setvbuf(fout,_IOFBF,s,16384);
+#else
+			setvbuf(fout,s,_IOFBF,16384);
+#endif
+		}
+	}
+
 	return OK;
-#endif /* BIX */
 }
 
-#ifdef MD
+#ifdef ENABLE_MKDIR
 /*
  *  Directory-creating routines from Public Domain TAR by John Gilmore
  */
@@ -759,58 +893,7 @@ register char *pathname;
 	return madeone;			/* Tell them to retry if we made one */
 }
 
-#if (MD != 2)
-#define	TERM_SIGNAL(status)	((status) & 0x7F)
-#define TERM_COREDUMP(status)	(((status) & 0x80) != 0)
-#define TERM_VALUE(status)	((status) >> 8)
-/*
- * Make a directory.  Compatible with the mkdir() system call on 4.2BSD.
- */
-mkdir(dpath, dmode)
-char *dpath;
-int dmode;
-{
-	int cpid, status;
-	struct stat statbuf;
-
-	if (stat(dpath,&statbuf) == 0) {
-		errno = EEXIST;		/* Stat worked, so it already exists */
-		return -1;
-	}
-
-	/* If stat fails for a reason other than non-existence, return error */
-	if (errno != ENOENT) return -1; 
-
-	switch (cpid = fork()) {
-
-	case -1:			/* Error in fork() */
-		return(-1);		/* Errno is set already */
-
-	case 0:				/* Child process */
-		/*
-		 * Cheap hack to set mode of new directory.  Since this
-		 * child process is going away anyway, we zap its umask.
-		 * FIXME, this won't suffice to set SUID, SGID, etc. on this
-		 * directory.  Does anybody care?
-		 */
-		status = umask(0);	/* Get current umask */
-		status = umask(status | (0777 & ~dmode)); /* Set for mkdir */
-		execl("/bin/mkdir", "mkdir", dpath, (char *)0);
-		_exit(-1);		/* Can't exec /bin/mkdir */
-	
-	default:			/* Parent process */
-		while (cpid != wait(&status)) ;	/* Wait for kid to finish */
-	}
-
-	if (TERM_SIGNAL(status) != 0 || TERM_VALUE(status) != 0) {
-		errno = EIO;		/* We don't know why, but */
-		return -1;		/* /bin/mkdir failed */
-	}
-
-	return 0;
-}
-#endif /* MD != 2 */
-#endif /* MD */
+#endif /* ENABLE_MKDIR */
 
 /*
  * Putsec writes the n characters of buf to receive file fout.
@@ -826,8 +909,8 @@ putsec(buf, n)
 	if (n == 0)
 		return OK;
 	if (Thisbinary) {
-		for (p=buf; --n>=0; )
-			putc( *p++, fout);
+		if (fwrite(buf,n,1,fout)!=1)
+			return ERROR;
 	}
 	else {
 		if (Eofseen)
@@ -877,28 +960,6 @@ register char *s;
 		if (islower(*s))
 			return TRUE;
 	return FALSE;
-}
-
-/*
- * substr(string, token) searches for token in string s
- * returns pointer to token within string if found, NULL otherwise
- */
-char *
-substr(s, t)
-register char *s,*t;
-{
-	register char *ss,*tt;
-	/* search for first char of token */
-	for (ss=s; *s; s++)
-		if (*s == *t)
-			/* compare token with substring */
-			for (ss=s,tt=t; ;) {
-				if (*tt == 0)
-					return s;
-				if (*ss++ != *tt++)
-					break;
-			}
-	return NULL;
 }
 
 /*
@@ -955,6 +1016,10 @@ char *s;
 		Verbose=1; ++s;
 	}
 	Progname = s;
+	if (*s == 'l') {
+		/* lrz -> rz */
+		++s;
+	}
 	if (s[0]=='r' && s[1]=='z')
 		Batch = TRUE;
 	if (s[0]=='r' && s[1]=='b')
@@ -978,11 +1043,22 @@ char *name;
 			bibi(-1);
 		}
 		/* restrict pathnames to current tree or uucppublic */
-		if ( substr(name, "../")
-		 || (name[0]== '/' && strncmp(name, PUBDIR, strlen(PUBDIR))) ) {
+		if ( strstr(name, "../")
+#ifdef PUBDIR
+		 || (name[0]== '/' && strncmp(name, PUBDIR, 
+		 	strlen(PUBDIR)))
+#endif
+		) {
 			canit();
 			fprintf(stderr,"\r\nlrz:\tSecurity Violation\r\n");
 			bibi(-1);
+		}
+		if (Restricted > 1) {
+			if (name[0]=='.' || strstr(name,"/.")) {
+				canit();
+				fprintf(stderr,"\r\nlrz:\tSecurity Violation\r\n");
+				bibi(-1);
+			}
 		}
 	}
 }
@@ -1005,7 +1081,7 @@ tryz()
 	for (n=Zmodem?15:5; --n>=0; ) {
 		/* Set buffer length (0) and capability flags */
 #ifdef SEGMENTS
-		stohdr(SEGMENTS*1024L);
+		stohdr(SEGMENTS*MAX_BLOCK);
 #else
 		stohdr(0L);
 #endif
@@ -1014,8 +1090,12 @@ tryz()
 #else
 		Txhdr[ZF0] = CANFC32|CANFDX|CANOVIO;
 #endif
+#ifdef ENABLE_TIMESYNC
+		if (timesync_flag)
+			Txhdr[ZF1] |= ZF1_TIMESYNC;
+#endif
 		if (Zctlesc)
-			Txhdr[ZF0] |= TESCCTL;
+			Txhdr[ZF0] |= TESCCTL; /* TESCCTL == ESCCTL */
 		zshhdr(tryzhdrtype, Txhdr);
 		if (tryzhdrtype == ZSKIP)	/* Don't skip too far */
 			tryzhdrtype = ZRINIT;	/* CAF 8-21-87 */
@@ -1032,7 +1112,7 @@ again:
 			zmanag = Rxhdr[ZF1];
 			ztrans = Rxhdr[ZF2];
 			tryzhdrtype = ZRINIT;
-			c = zrdata(secbuf, 1024);
+			c = zrdata(secbuf, MAX_BLOCK);
 			mode(3);
 			if (c == GOTCRCW)
 				return ZFILE;
@@ -1053,7 +1133,19 @@ again:
 			goto again;
 		case ZCOMMAND:
 			cmdzack1flg = Rxhdr[ZF0];
-			if (zrdata(secbuf, 1024) == GOTCRCW) {
+			if (zrdata(secbuf, MAX_BLOCK) == GOTCRCW) {
+				if (Verbose)
+				{
+					fprintf(stderr,"lrz: remote requested command\n");
+					fprintf(stderr,"lrz: %s\n",secbuf);
+				}
+				if (!allow_remote_commands) 
+				{
+					if (Verbose)
+						fprintf(stderr,"lrz: not executed\n");
+					zshhdr(ZCOMPL, Txhdr);
+					return ZCOMPL;
+				}
 				if (cmdzack1flg & ZCACK1)
 					stohdr(0L);
 				else
@@ -1117,14 +1209,18 @@ rzfiles()
 rzfile()
 {
 	register c, n;
-	long rxbytes;
+	long last_rxbytes=0;
+	long last_bps=0;
+	long not_printed=0;
 
 	Eofseen=FALSE;
+
+	n = 20; rxbytes = 0l;
+
 	if (procheader(secbuf) == ERROR) {
 		return (tryzhdrtype = ZSKIP);
 	}
 
-	n = 20; rxbytes = 0l;
 
 	for (;;) {
 #ifdef SEGMENTS
@@ -1148,7 +1244,7 @@ nxthdr:
 				return ERROR;
 			}
 		case ZFILE:
-			zrdata(secbuf, 1024);
+			zrdata(secbuf, MAX_BLOCK);
 			continue;
 		case ZEOF:
 #ifdef SEGMENTS
@@ -1162,6 +1258,17 @@ nxthdr:
 				 *  out before we sent our zrpos.
 				 */
 				errors = 0;  goto nxthdr;
+			}
+			if (Verbose>1) {
+				int minleft =  0;
+				int secleft =  0;
+				last_bps=(rxbytes/timing(0));
+				if (last_bps > 0) {
+					minleft =  (Bytesleft-rxbytes)/last_bps/60;
+					secleft =  ((Bytesleft-rxbytes)/last_bps)%60;
+				}
+				fprintf(stderr, "\rBytes Received: %7ld/%7ld   BPS:%-6ld                   \r\n",
+					rxbytes, Bytesleft, last_bps, minleft, secleft);
 			}
 			if (closeit()) {
 				tryzhdrtype = ZFERR;
@@ -1201,25 +1308,29 @@ nxthdr:
 				zmputs(Attn);  continue;
 			}
 moredata:
-			if (Verbose>1) {
-				long bps=(rxbytes/timing(0));
+			if (Verbose>1 
+				&& (not_printed > 7 || rxbytes > last_bps / 2 + last_rxbytes)) {
 				int minleft =  0;
 				int secleft =  0;
-				if (bps > 0) {
-					minleft =  (Bytesleft-rxbytes)/bps/60;
-					secleft =  ((Bytesleft-rxbytes)/bps)%60;
+				last_bps=(rxbytes/timing(0));
+				if (last_bps > 0) {
+					minleft =  (Bytesleft-rxbytes)/last_bps/60;
+					secleft =  ((Bytesleft-rxbytes)/last_bps)%60;
 				}
-				fprintf(stderr, "\rBytes Received:%7ld/%7ld   BPS:%-6ld ETA %02d:%02d  ",
-				 rxbytes, Bytesleft, bps, minleft, secleft);
-			}
+				fprintf(stderr, "\rBytes Received: %7ld/%7ld   BPS:%-6ld ETA %02d:%02d  ",
+				 rxbytes, Bytesleft, last_bps, minleft, secleft);
+				last_rxbytes=rxbytes;
+				not_printed=0;
+			} else if (Verbose)
+				not_printed++;
 #ifdef SEGMENTS
-			if (chinseg >= (1024 * SEGMENTS)) {
+			if (chinseg >= (MAX_BLOCK * SEGMENTS)) {
 				putsec(secbuf, chinseg);
 				chinseg = 0;
 			}
-			switch (c = zrdata(secbuf+chinseg, 1024))
+			switch (c = zrdata(secbuf+chinseg, MAX_BLOCK))
 #else
-			switch (c = zrdata(secbuf, 1024))
+			switch (c = zrdata(secbuf, MAX_BLOCK))
 #endif
 			{
 			case ZCAN:
@@ -1260,8 +1371,6 @@ moredata:
 				putsec(secbuf, Rxcount);
 #endif
 				rxbytes += Rxcount;
-				if (Verbose>1)
-				  fprintf(stderr, "\rBytes received: %7ld/%7ld: %7ld Bytes per sec", rxbytes, Bytesleft, (long)(rxbytes/timing(0)));
 				stohdr(rxbytes);
 				zshhdr(ZACK, Txhdr);
 				sendline(XON);
@@ -1294,8 +1403,6 @@ moredata:
 				putsec(secbuf, Rxcount);
 #endif
 				rxbytes += Rxcount;
-				if (Verbose>1)
-				  fprintf(stderr, "\rBytes received: %7ld/%7ld: %7ld Bytes per sec", rxbytes, Bytesleft, (long)(rxbytes/timing(0)));
 				goto nxthdr;
 			}
 		}
@@ -1309,17 +1416,26 @@ moredata:
 zmputs(s)
 char *s;
 {
-	register c;
+	char *p;
 
-	while (*s) {
-		switch (c = *s++) {
-		case '\336':
-			sleep(1); continue;
-		case '\335':
-			sendbrk(); continue;
-		default:
-			sendline(c);
+	while (s && *s)
+	{
+		p=strpbrk(s,"\335\336");
+		if (!p)
+		{
+			write(1,s,strlen(s));
+			return;
 		}
+		if (p!=s)
+		{
+			write(1,s,p-s);
+			s=p;
+		}
+		if (*p=='\336')
+			sleep(1);
+		else
+			sendbrk();
+		p++;
 	}
 }
 
@@ -1336,8 +1452,10 @@ closeit()
 		}
 		return OK;
 	}
-	if (fclose(fout)==ERROR) {
-		fprintf(stderr, "file close ERROR\n");
+	if (fclose(fout)) {
+		fprintf(stderr, "file close error: %s\n",strerror(errno));
+		/* this may be any sort of error, including random data corruption */
+		unlink(Pathname);
 		return ERROR;
 	}
 	if (Modtime) {

@@ -1,21 +1,19 @@
-.\" Revision Level 
-.\" Last Delta     04-22-88
+'\"
+'\" Revision Level 
+'\" Last Delta     04-22-88
 .TH RZ 1 OMEN
 .SH NAME
 rx, rb, rz \- XMODEM, YMODEM, ZMODEM (Batch) file receive
 .SH SYNOPSIS
 .B rz
-.RB [\- "\ +abepqtuvy" ]
+.RB [\- "\ +8abeOpqRtTuUvy" ]
 .br
 .B rb
-.RB [\- "\ +abqtuvy" ]
+.RB [\- "\ +abqRtuUvy" ]
 .br
 .B rx
-.RB [\- "\ abceqtuv" ]
+.RB [\- "\ abceqRtuUv" ]
 .I file
-.br
-.B gz
-.I "file ..."
 .br
 .RB [ \- ][ v ] rzCOMMAND
 .SH DESCRIPTION
@@ -90,17 +88,6 @@ actually improves throughput without causing problems.
 The user must supply the file name to both sending and receiving programs.
 Up to 1023 garbage characters may be added to the received file.
 
-.B Gz
-is a shell script which calls
-.I sz
-to command Pro-YAM or ZCOMM to transmit the specified files.
-Pathnames used with
-.I gz
-must be escaped if they have special significance to the Unix shell.
-.br
-EXAMPLE:
-gz "-a C:*.c D:*.h"
-
 
 .B Rz
 may be invoked as
@@ -133,7 +120,9 @@ COMMAND as login sets SHELL=rsh which disallows absolute
 pathnames.
 If invoked with a leading ``v'',
 .I rz
-will report progress to /tmp/rzlog.
+will be verbose (see 
+.B v
+option).
 The following entry works for
 .SM Unix
 SYS III/V:
@@ -159,10 +148,16 @@ This may be disabled with the
 .B q
 option.
 
-.PP
+.SH OPTIONS
 The meanings of the available options are:
 .PP
 .PD 0
+.TP
+.B backslash (\\\\)
+convert next character to upper case.
+.TP
+.B +
+append received data to an existing file (ZMODEM, ASCII only).
 .TP
 .B a
 Convert files to
@@ -180,6 +175,16 @@ Request 16 bit CRC.
 XMODEM file transfers default to 8 bit checksum.
 YMODEM and ZMODEM normally use 16 bit CRC.
 .TP
+.B C
+allow remote command execution (
+.B insecure
+). This allows the sender to execute an arbitrary command through
+.B system
+() or
+.B execl
+(). Default is to disable this feature (?). This option is ignored
+if running in restricted mode.
+.TP
 .B D
 Output file data to /dev/null; for testing.
 (Unix only)
@@ -188,28 +193,99 @@ Output file data to /dev/null; for testing.
 Force sender to escape all control characters;
 normally XON, XOFF, DLE, CR-@-CR, and Ctrl-X are escaped.
 .TP
+.B h
+give help screen.
+.TP
+.B O
+Disable read timeout handling code. This makes lrz hang if the
+sender does not send any more, but increases performance (a bit)
+and decreases system load (through reducing the number of system
+calls by about 50 percent).
+
+Use this option with care.
+.TP
 .B p
 (ZMODEM) Protect: skip file if destination file exists.
 .TP
 .B q
 Quiet suppresses verbosity.
 .TP
+.B r
+Crash recovery mode. lrz tries to resume interrupted file transfers.
+.TP
+.B R
+Enter more restricted mode. lrz will not create directories or files
+with a leading dot if this option is given twice.
+
+See 
+.B SECURITY
+for mode information about restricted mode.
+.TP
+.B S
+Request timesync packet from the sender. The sender sends its system time, 
+causing lrz to complain about more then 60 seconds difference. 
+
+Lrz tries to set the local system time to the remote time if this option 
+is given twice (this fails if lrz is not run by root).
+
+This option makes lrz incompatible with certain other ZModems. Don't
+use it unless you know what you are doing.
+.TP
 .B "t tim"
 Change timeout to
 .I tim
-tenths of seconds.
+tenths of seconds. This is ignored if timeout handling is turned of
+through the 
+.B O 
+option.
+.TP
+.B U
+turn off restricted mode (this is not possible if running under
+a restricted shell).
 .TP
 .B v
 Verbose
 causes a list of file
-names to be appended to
-/tmp/rzlog .
+names to be appended to stderr.
 More v's generate more output.
+.TP
+.B wN
+Set window size to N.
 .TP
 .B y
 Yes, clobber any existing files with the same name.
 .PD
 .ne 6
+.SH SECURITY
+Contrary to the original ZMODEM lrz defaults to restricted mode. In
+restricted mode lrz will not accept absolute pathnames or references 
+to a parent directory, will not modify an existing file, and
+removes any files received in error. Remote command execution is 
+disabled.
+
+The use a more restricted mode set the environment variable 
+.B ZMODEM_RESTRICTED 
+or give the
+.B R
+option. This disables creation of subdirectories and invisible
+files.
+
+Restricted mode may be turned off with the
+.B U 
+option, unless lrz runs under a restricted shell.
+
+.SH ENVIRONMENT
+lrz uses the following environment variables:
+.TP
+.B SHELL
+lrz recognizes a restricted shell if this variable includes
+.I "rsh"
+or
+.I "rksh"
+\.
+.TP
+.B ZMODEM_RESTRICTED
+lrz enters the more restricted mode if the variable is set.
 .SH EXAMPLES
 .RE
 (Pro-YAM command)
@@ -328,6 +404,3 @@ rz.c, crctab.c, rbsb.c, zm.c, zmodem.h Unix source files.
 
 rz.c, crctab.c, vrzsz.c, zm.c, zmodem.h, vmodem.h, vvmodem.c,
 VMS source files.
-
-/tmp/rzlog stores debugging output generated with -vv option
-(rzlog on VMS).

@@ -1,0 +1,189 @@
+# Makefile for Linux lrz and lsz programs
+# This are german umlauts - useful for make test: "¸ˆ‰‹÷‹ﬂ"
+#
+VERSION=0.12b
+
+CC=@CC@
+CFLAGS=@CFLAGS@  -DOS=\"@host_os@\" -DCPU=\"@host_cpu@\" @ENABLE_TIMESYNC@ \
+	-DVERSION=\"$(VERSION)\" @PUBDIR@ @ENABLE_MKDIR@ -DNFGVMIN
+LDFLAGS=@LDFLAGS@
+LIBS=@LIBS@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+
+mandir=@mandir@
+man1=man1
+man1ext=1
+man1dir=$(mandir)/$(man1)
+
+transform=@program_transform_name@
+srcdir=@srcdir@
+VPATH=$(srcdir):.
+
+OS=@host_os@
+
+PROGRAMS=lsz lrz
+INSTALL=@INSTALL@
+INSTALL_DATA=@INSTALL_DATA@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+LN_S=@LN_S@
+@SET_MAKE@
+
+DISTDIR=lrzsz-$(VERSION)
+
+DISTFILES=CHANGES COPYING INSTALL Makefile.in NEWS README TODO \
+	COMPATABILITY \
+	crctab.c lrz.1 lrz.c lsz.1 lsz.c rbsb.c timing.c timing.h \
+	zm.c zmodem.h \
+	acconfig.h config.guess config.h.in config.sub configure \
+	configure.in install-sh  \
+	strerror.c mkdir.c strstr.c
+
+MOSTLYCLEANFILES=*.o lrb lsb lrx lsx core out gmon.*
+CLEANFILES=lrz lsz
+DISTCLEANFILES=config.cache config.h Makefile config.log config.status
+
+EXTRATESTFILES= #/pub/gnu/emacs-19.30.tar.gz
+
+all: lrz lsz
+
+lrz: lrz.o timing.o
+	$(CC) $(LDFLAGS) -o $@ lrz.o timing.o $(LIBS)
+lsz: lsz.o timing.o
+	$(CC) $(LDFLAGS) -o $@ lsz.o timing.o $(LIBS)
+
+lrz.o: lrz.c crctab.c rbsb.c zm.c zmodem.h timing.h config.h
+	$(CC) -c $(CFLAGS) -I$(srcdir) $(srcdir)/lrz.c
+lsz.o: lsz.c crctab.c rbsb.c zm.c zmodem.h timing.h config.h
+	$(CC) -c $(CFLAGS) -I$(srcdir) $(srcdir)/lsz.c
+timing.o: timing.h timing.c config.h
+	$(CC) -c $(CFLAGS) -I$(srcdir) $(srcdir)/timing.c
+dist:
+	rm -rf $(DISTDIR)
+	mkdir $(DISTDIR)
+	cp -a $(DISTFILES) $(DISTDIR)
+	tar czvvf lrzsz-$(VERSION).tar.gz $(DISTDIR)
+uudist: dist
+	uuencode <lrzsz-$(VERSION).tar.gz lrzsz-$(VERSION).tar.gz >lrzsz-$(VERSION).tar.gz.uu
+
+# yes, this is a hack
+uu2sh: uudist
+	uuencode <lrzsz-$(VERSION).tar.gz lrzsz-$(VERSION).tar.gz |mail -s lrzsz-$(VERSION).tar.gz.uu sh@du3.maus.de
+
+
+install: install-programs install-man
+
+install-strip: 
+	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
+
+install-programs:
+	for i in $(PROGRAMS) ; do \
+	  $(INSTALL_PROGRAM) -m755 $$i $(bindir)/`echo $$p |sed '$(transform)'` ;\
+	done
+	( cd $(bindir) ; \
+	  $(LN_S) -f `echo lrz|sed '$(transform)'` `echo lrb|sed '$(transform)'` ;\
+	  $(LN_S) -f `echo lrz|sed '$(transform)'` `echo lrx|sed '$(transform)'` ;\
+	  $(LN_S) -f `echo lsz|sed '$(transform)'` `echo lsb|sed '$(transform)'` ;\
+	  $(LN_S) -f `echo lsz|sed '$(transform)'` `echo lsx|sed '$(transform)'` ;\
+	)
+
+install-man: lsz.1 lrz.1
+	@-for i in lrz lsz ; do \
+		sect=1; inst=`echo $$i| sed '$(transform)'`.$(man1ext) ; \
+		echo "installing $$i.man as $(man1dir)/$$inst" ; \
+		$(INSTALL_DATA) $(srcdir)/$$i.1 $(man1dir)/$$inst ; \
+	done
+	@inst=$(man1dir)/`echo lsb.$(man1ext)|sed '$(transform)'` ; \
+		echo "installing lsz.man as $$inst" ; \
+		echo ".so $(man1)/`echo lsz|sed '$(transform)'`.$(man1ext)" >$$inst
+	@inst=$(man1dir)/`echo lsx.$(man1ext)|sed '$(transform)'` ; \
+		echo "installing lsz.man as $$inst" ; \
+		echo ".so $(man1)/`echo lsz|sed '$(transform)'`.$(man1ext)" >$$inst
+	@inst=$(man1dir)/`echo lrb.$(man1ext)|sed '$(transform)'` ; \
+		echo "installing lrz.man as $$inst" ; \
+		echo ".so $(man1)/`echo lrz|sed '$(transform)'`.$(man1ext)" >$$inst
+	@inst=$(man1dir)/`echo lrx.$(man1ext)|sed '$(transform)'` ; \
+		echo "installing lrz.man as $$inst" ; \
+		echo ".so $(man1)/`echo lrz|sed '$(transform)'`.$(man1ext)" >$$inst
+
+uninstall:
+	for i in lsz lrz lsb lrb lsx lrx ; do \
+		rm -f $(bindir)/`echo $$i|sed '$(transform)'`; \
+	done
+
+
+usenet:
+	shar -f /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c rbsb.c \
+	 init.com crc.c vmodem.h vvmodem.c vrzsz.c crctab.c minirb.c \
+	 *.1 gz ptest.sh *.t
+
+shar:
+	shar -f /tmp/rzsz -m 2000000 README Makefile zmodem.h zm.c \
+	 init.com vmodem.h vvmodem.c vrzsz.c sz.c rz.c crctab.c \
+	 crc.c rbsb.c minirb.c *.1 gz ptest.sh *.t
+
+unixforum: shar
+	compress -b12 /tmp/rzsz.sh
+
+unix:
+	undos README zmodem.h zm.c sz.c rz.c \
+	 vmodem.h vvmodem.c vrzsz.c crctab.c *.1 \
+	 init.com crc.c *.t 
+
+dos:
+	todos README zmodem.h zm.c sz.c rz.c \
+	 vmodem.h vvmodem.c vrzsz.c crctab.c *.1 \
+	 init.com crc.c *.t 
+arc:
+	rm -f /tmp/rzsz.arc
+	arc a /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
+	 vmodem.h vvmodem.c vrzsz.c crctab.c rbsb.c \
+	 init.com crc.c *.1 gz ptest.sh *.t minirb.c
+	chmod og-w /tmp/rzsz.arc
+	mv /tmp/rzsz.arc /t/yam
+
+zoo:
+	rm -f /tmp/rzsz.zoo
+	zoo a /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
+	 vmodem.h vvmodem.c vrzsz.c crctab.c rbsb.c *.1 \
+	 init.com crc.c gz ptest.sh *.t minirb.c
+	chmod og-w /tmp/rzsz.zoo
+	mv /tmp/rzsz.zoo /t/yam
+
+tags:
+	ctags sz.c rz.c zm.c rbsb.c
+
+
+
+mostlyclean: 
+	rm -f $(MOSTLYCLEANFILES)
+clean: mostlyclean
+	rm -f $(CLEANFILES)
+	rm -rf testdir
+distclean: clean
+	rm -f $(DISTCLEANFILES)
+maintainer-clean: distclean
+
+check test:
+	rm -rf testdir
+	mkdir testdir
+	mkfifo testdir/pipe
+	./lsz -q88O $(DISTFILES) $(EXTRATESTFILES) <testdir/pipe 2>out| \
+	(cd testdir ; ../lrz -O >>pipe )
+	for i in $(DISTFILES) $(EXTRATESTFILES) ; do \
+		cmp $$i testdir/`basename $$i` || exit 1 ; \
+	done
+	-test -f testdir/gmon.out && mv testdir/gmon.out gmon.lrz
+	-test -f gmon.out && mv gmon.out gmon.lsz
+	rm -rf testdir
+
+stest:
+	rm -f pipe security.leak
+	mkfifo pipe
+	lsz -q -c 'echo you have a security leak > security.leak' <pipe |\
+	    lrz -q >>pipe
+	@echo
+	-@cat security.leak || echo "no security leak found"
+	@echo
+	rm -f pipe security.leak

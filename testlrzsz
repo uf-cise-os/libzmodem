@@ -1,5 +1,0 @@
-#!/bin/sh
-#Quick test for lsz and lrz using a named pipe - no modem need.
-/sbin/mknod fifo p
-./lsz <fifo /etc/motd |./lrz >fifo
-rm -f fifo
