@@ -43,7 +43,12 @@ for i in $objdir/src/l?z ; do
 	z_test_files="$z_test_files $i" 
 	y_test_files="$y_test_files $i" 
 done
-for i in /pub/gnu/emacs-1*.tar.gz ; do
+rm -f $objdir/null1 $objdir/null2
+touch $objdir/null1 $objdir/null2
+x_test_files="$objdir/null1 $x_test_files" 
+y_test_files="$objdir/null1 $y_test_files" 
+z_test_files="$objdir/null1 $objdir/null2 $z_test_files" 
+for i in /pub/gnu/emacs/emacs-2*.tar.gz ; do
 	if test -f "$i" ; then
 		z8_test_files="$z8_test_files $i" 
 		z_test_files="$z_test_files $i" 
@@ -68,7 +73,7 @@ if test "$mode" = all -o "$mode" = z ; then
 	mkdir $testdir/zmodem
 	failed=0
 	($SZ -q $SZBUFSIZE $z_test_files ) <$testdir/pipe | \
-		(cd $testdir/zmodem ; exec $RZ $RZBUFSIZE $QUIET >>../pipe )
+		(cd $testdir/zmodem ; echo "123" >null1 ; exec $RZ -y $RZBUFSIZE $QUIET >>../pipe )
 	for i in $z_test_files ; do 
 		bn=`basename $i`
 		cmp $i $testdir/zmodem/$bn
@@ -173,71 +178,6 @@ if test "$mode" = all -o "$mode" = z8N ; then
 	fi
 fi
 
-# test zmodem-tcp
-# inband tcp: stdin/out connection needed.
-if test "$mode" = all -o "$mode" = tcp ; then
-	echo "testing ZMODEMtcp"
-	mkdir $testdir/zmodemtcp
-	failed=0
-	($SZ --tcp -q $SZBUFSIZE $z_test_files ) <$testdir/pipe | \
-		(cd $testdir/zmodemtcp ; exec $RZ $RZBUFSIZE $QUIET >>../pipe )
-	for i in $z_test_files ; do 
-		bn=`basename $i`
-		cmp $i $testdir/zmodemtcp/$bn
-		if test $? -eq 0 ; then
-			rm -f $testdir/zmodemtcp/$bn
-		else
-			failed=1
-		fi
-	done
-	rmdir $testdir/zmodemtcp 2>&5
-	if test $failed = 1 ; then 
-		echo "ZMODEMtcp test failed"
-		any_failure="$any_failure ZMODEMtcp"
-	fi
-fi
-if test "$mode" = all -o "$mode" = tcp4 ; then
-	echo "testing ZMODEMtcp4k"
-	mkdir $testdir/zmodemtcp4k
-	failed=0
-	($SZ --tcp -q4 $SZBUFSIZE $z_test_files ) <$testdir/pipe | \
-		(cd $testdir/zmodemtcp4k ; exec $RZ $RZBUFSIZE $QUIET >>../pipe )
-	for i in $z_test_files ; do 
-		bn=`basename $i`
-		cmp $i $testdir/zmodemtcp4k/$bn
-		if test $? -eq 0 ; then
-			rm -f $testdir/zmodemtcp4k/$bn
-		else
-			failed=1
-		fi
-	done
-	rmdir $testdir/zmodemtcp4k 2>&5
-	if test $failed = 1 ; then 
-		echo "ZMODEMtcp4k test failed"
-		any_failure="$any_failure ZMODEMtcp4k"
-	fi
-fi
-if test "$mode" = all -o "$mode" = tcp8 ; then
-	echo "testing ZMODEMtcp8k"
-	mkdir $testdir/zmodemtcp8k
-	failed=0
-	($SZ --tcp -q8OT $SZBUFSIZE $z_test_files ) <$testdir/pipe | \
-		(cd $testdir/zmodemtcp8k ; exec $RZ $RZBUFSIZE $QUIET >>../pipe )
-	for i in $z_test_files ; do 
-		bn=`basename $i`
-		cmp $i $testdir/zmodemtcp8k/$bn
-		if test $? -eq 0 ; then
-			rm -f $testdir/zmodemtcp8k/$bn
-		else
-			failed=1
-		fi
-	done
-	rmdir $testdir/zmodemtcp8k 2>&5
-	if test $failed = 1 ; then 
-		echo "ZMODEMtcp8k test failed"
-		any_failure="$any_failure ZMODEMtcp8k"
-	fi
-fi
 # out-of-band tcp
 if test "$mode" = tcpo ; then
 	echo "testing ZMODEMtcpo"
@@ -847,6 +787,7 @@ if test "$mode" = all -o "$mode" = abuse ; then
 		( $RZ >>$testdir/pipe )
 fi
 
-#rm -rf $testdir
+rm -rf $testdir
+rm -f $objdir/null1 $objdir/null2
 exit 0
 

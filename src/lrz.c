@@ -100,23 +100,18 @@ int	under_rsh=FALSE;
 int zmodem_requested=FALSE;
 
 #ifdef SEGMENTS
-int chinseg = 0;	/* Number of characters received in this data seg */
-char secbuf[1+(SEGMENTS+1)*MAX_BLOCK];
-#else
-char secbuf[MAX_BLOCK + 1];
+static int chinseg = 0;	/* Number of characters received in this data seg */
 #endif
+static char *secbuf;
 
 #ifdef ENABLE_TIMESYNC
-int timesync_flag=0;
-int in_timesync=0;
+static int timesync_flag=0;
+static int in_timesync=0;
 #endif
-int in_tcpsync=0;
-int tcpsync_flag=1;
 int tcp_socket=-1;
 int tcp_flag=0;
 char *tcp_server_address=NULL;
 
-char tcp_buf[256]="";
 #if defined(F_GETFD) && defined(F_SETFD) && defined(O_SYNC)
 static int o_sync = 0;
 #endif
@@ -250,7 +245,7 @@ static struct option const long_options[] =
 static void
 show_version(void)
 {
-	printf ("%s (%s) %s\n", program_name, PACKAGE, VERSION);
+	printf ("%s (GNU %s) %s\n", program_name, PACKAGE, VERSION);
 }
 
 int
@@ -479,6 +474,14 @@ main(int argc, char *argv[])
 		error(1,0,
 		_("this program was never intended to be used setuid\n"));
 	}
+
+#ifdef SEGMENTS
+	secbuf=malloc(1+(SEGMENTS+1)*MAX_BLOCK);
+#else
+	secbuf=malloc(MAX_BLOCK+1);
+#endif
+	if (!secbuf) error(1,0,_("out of memory"));
+
 	/* initialize zsendline tab */
 	zsendline_init();
 #ifdef HAVE_SIGINTERRUPT
@@ -630,6 +633,8 @@ usage(int exitcode, const char *what)
 "  -S, --timesync              request remote time (twice: set local time)\n"
 "      --syslog[=off]          turn syslog on or off, if possible\n"
 "  -t, --timeout N             set timeout to N tenths of a second\n"
+"      --tcp-server            open socket, wait for connection (Z)\n"
+"      --tcp-client ADDR:PORT  open socket, connect to ... (Z)\n"
 "  -u, --keep-uppercase        keep upper case filenames\n"
 "  -U, --unrestrict            disable restricted mode (if allowed to)\n"
 "  -v, --verbose               be verbose, provide debugging information\n"
@@ -1148,9 +1153,6 @@ procheader(char *name, struct zm_fileinfo *zi)
 	if (timesync_flag && 0==strcmp(name,"$time$.t"))
 		in_timesync=1;
 #endif
-	in_tcpsync=0;
-	if (tcpsync_flag && 0==strcmp(name,"$tcp$.t"))
-		in_tcpsync=1;
 
 	zi->bytes_total = DEFBYTL;
 	zi->mode = 0; 
@@ -1175,7 +1177,6 @@ procheader(char *name, struct zm_fileinfo *zi)
 		&& (zmanag&ZF1_ZMMASK) != ZF1_ZMAPND
 #ifdef ENABLE_TIMESYNC
 	    && !in_timesync
-	    && !in_tcpsync
 #endif
 		&& (fout=fopen(name, "r"))) {
 		struct stat sta;
@@ -1279,15 +1280,6 @@ procheader(char *name, struct zm_fileinfo *zi)
 		return ERROR; /* skips file */
 	}
 #endif /* ENABLE_TIMESYNC */
-	if (in_tcpsync) {
-		fout=tmpfile();
-		if (!fout) {
-			error(1,errno,_("cannot tmpfile() for tcp protocol synchronization"));
-		}
-		zi->bytes_received=0;
-		return OK;
-	}
-
 
 	if (!zmodem_requested && MakeLCPathname && !IsAnyLower(name_static)
 	  && !(zi->mode&UNIXFILE))
@@ -1671,13 +1663,6 @@ tryz(void)
 			Txhdr[ZF0] |= TESCCTL; /* TESCCTL == ESCCTL */
 		zshhdr(tryzhdrtype, Txhdr);
 
-		if (tcp_socket==-1 && *tcp_buf) {
-			/* we need to switch to tcp mode */
-			tcp_socket=tcp_connect(tcp_buf);
-			tcp_buf[0]=0;
-			dup2(tcp_socket,0);
-			dup2(tcp_socket,1);
-		}
 		if (tryzhdrtype == ZSKIP)	/* Don't skip too far */
 			tryzhdrtype = ZRINIT;	/* CAF 8-21-87 */
 again:
@@ -2223,14 +2208,6 @@ closeit(struct zm_fileinfo *zi)
 		if (pclose(fout)) {
 			return ERROR;
 		}
-		return OK;
-	}
-	if (in_tcpsync) {
-		rewind(fout);
-		if (!fgets(tcp_buf,sizeof(tcp_buf),fout)) {
-			error(1,errno,_("fgets for tcp protocol synchronization failed: "));
-		}	
-		fclose(fout);
 		return OK;
 	}
 	ret=fclose(fout);

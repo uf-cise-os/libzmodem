@@ -70,12 +70,17 @@ __unsigned long int __strtol ();
 /* FIXME: comment.  */
 
 strtol_error
+#ifdef __cplusplus
+__xstrtol (const char *s, char **ptr, int base, 
+		__unsigned long int *val, const char *valid_suffixes)
+#else
 __xstrtol (s, ptr, base, val, valid_suffixes)
      const char *s;
      char **ptr;
      int base;
      __unsigned long int *val;
      const char *valid_suffixes;
+#endif
 {
   char *t_ptr;
   char **p;

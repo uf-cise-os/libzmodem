@@ -102,6 +102,7 @@ static int zrhhdr __P ((char *hdr));
 static char zsendline_tab[256];
 static int zrdat32 __P ((char *buf, int length, size_t *));
 static void zsbh32 __P ((char *hdr, int type));
+static inline void zsendline_s __P((const char *s, size_t count));
 
 extern int zmodem_requested;
 

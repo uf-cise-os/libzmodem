@@ -2,7 +2,7 @@
 
 /* hacked up by uo to get around automake-1.3-problem */
 
-/*$Id: ansi2knr.c,v 1.5 1998/12/27 16:09:19 uwe Exp $*/
+/*$Id: ansi2knr.c,v 1.4 1998/12/27 14:58:37 uwe Exp $*/
 /* Convert ANSI C function definitions to K&R ("traditional C") syntax */
 
 /*

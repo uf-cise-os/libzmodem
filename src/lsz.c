@@ -143,7 +143,7 @@ char Myattn[] = { 03, 0336, 0 };
 FILE *input_f;
 
 #define MAX_BLOCK 8192
-char txbuf[MAX_BLOCK];
+char *txbuf;
 
 long vpos = 0;			/* Number of bytes read from file */
 
@@ -190,9 +190,9 @@ size_t max_blklen=1024;
 size_t start_blklen=0;
 int zmodem_requested;
 time_t stop_time=0;
-int tcp_flag=0;
 char *tcp_server_address=0;
 int tcp_socket=-1;
+int tcp_flag=0;
 
 int error_count;
 #define OVERHEAD 18
@@ -235,9 +235,10 @@ bibi (int n)
 
 /* Called when ZMODEM gets an interrupt (^C) */
 static RETSIGTYPE
-onintr(int n LRZSZ_ATTRIB_UNUSED)
+onintr(int n)
 {
 	signal(SIGINT, SIG_IGN);
+	n++; /* use it */
 	longjmp(intrjmp, -1);
 }
 
@@ -296,7 +297,6 @@ static struct option const long_options[] =
   {"overwrite-or-skip", no_argument, NULL, 'Y'},
 
   {"delay-startup", required_argument, NULL, 4},
-  {"tcp", no_argument, NULL, 5},
   {"tcp-server", no_argument, NULL, 6},
   {"tcp-client", required_argument, NULL, 7},
   {"no-unixmode", no_argument, NULL, 8},
@@ -570,9 +570,6 @@ main(int argc, char **argv)
 			if (s_err != LONGINT_OK)
 				STRTOL_FATAL_ERROR (optarg, _("startup delay"), s_err);
 			break;
-		case 5:
-			tcp_flag=1;
-			break;
 		case 6:
 			tcp_flag=2;
 			break;
@@ -594,6 +591,10 @@ main(int argc, char **argv)
 		error(1,0,
 		_("this program was never intended to be used setuid\n"));
 	}
+
+	txbuf=malloc(MAX_BLOCK);
+	if (!txbuf) error(1,0,_("out of memory"));
+
 	zsendline_init();
 
 	if (start_blklen==0) {
@@ -772,10 +773,6 @@ main(int argc, char **argv)
 				Filesleft++;
 			}
 #endif
-			if (tcp_flag==1) {
-				Totalleft+=256; /* tcp never needs more */
-				Filesleft++;
-			}
 		}
 	}
 	fflush(stdout);
@@ -901,22 +898,6 @@ wcsend (int argc, char *argp[])
 	Crcflg = FALSE;
 	firstsec = TRUE;
 	bytcnt = (size_t) -1;
-
-	if (tcp_flag==1) {
-		char buf[256];
-		int d;
-
-		/* tell receiver to receive via tcp */
-		d=tcp_server(buf);
-		if (send_pseudo("/$tcp$.t",buf)) {
-			error(1,0,_("tcp protocol init failed\n"));
-		}
-		/* ok, now that this file is sent we can switch to tcp */
-
-		tcp_socket=tcp_accept(d);
-		dup2(tcp_socket,0);
-		dup2(tcp_socket,1);
-	}
 
 	for (n = 0; n < argc; ++n) {
 		Totsecs = 0;
@@ -1571,8 +1552,8 @@ usage(int exitcode, const char *what)
 "  -R, --restricted            restricted, more secure mode\n"
 "  -q, --quiet                 quiet (no progress reports)\n"
 "  -s, --stop-at {HH:MM|+N}    stop transmission at HH:MM or in N seconds\n"
-"      --tcp                   build a TCP connection to transmit files\n"
-"      --tcp-server            open socket, wait for connection\n"
+"      --tcp-server            open socket, wait for connection (Z)\n"
+"      --tcp-client ADDR:PORT  open socket, connect to ... (Z)\n"
 "  -u, --unlink                unlink file after transmission\n"
 "  -U, --unrestrict            turn off restricted mode (if allowed to)\n"
 "  -v, --verbose               be verbose, provide debugging information\n"
@@ -1750,7 +1731,6 @@ sendzsinit(void)
 static int 
 zsendfile(struct zm_fileinfo *zi, const char *buf, size_t blen)
 {
-	int c;
 	unsigned long crc;
 	size_t rxpos;
 
@@ -1762,6 +1742,8 @@ zsendfile(struct zm_fileinfo *zi, const char *buf, size_t blen)
 #endif
 
 	for (;;) {
+		int gotblock;
+		int gotchar;
 		Txhdr[ZF0] = Lzconv;	/* file conversion request */
 		Txhdr[ZF1] = Lzmanag;	/* file management request */
 		if (Lskipnocor)
@@ -1771,11 +1753,11 @@ zsendfile(struct zm_fileinfo *zi, const char *buf, size_t blen)
 		zsbhdr(ZFILE, Txhdr);
 		ZSDATA(buf, blen, ZCRCW);
 again:
-		c = zgethdr(Rxhdr, 1, &rxpos);
-		switch (c) {
+		gotblock = zgethdr(Rxhdr, 1, &rxpos);
+		switch (gotblock) {
 		case ZRINIT:
-			while ((c = READLINE_PF(50)) > 0)
-				if (c == ZPAD) {
+			while ((gotchar = READLINE_PF(50)) > 0)
+				if (gotchar == ZPAD) {
 					goto again;
 				}
 			/* **** FALL THRU TO **** */
@@ -1811,7 +1793,8 @@ again:
 			if (use_mmap && !mm_addr)
 			{
 				struct stat st;
-				if (fstat (fileno (input_f), &st) == 0) {
+				/* mmap on files of 0 length can give 0 as result .. under linux 2.2.9 at least */
+				if (fstat (fileno (input_f), &st) == 0 && st.st_size!=0) {
 					mm_size = st.st_size;
 					mm_addr = mmap (0, mm_size, PROT_READ,
 									MAP_SHARED, fileno (input_f), 0);
@@ -1842,8 +1825,8 @@ again:
 					} else
 						rxpos=-1;
 				}
-				while (rxpos-- && ((c = getc(input_f)) != EOF))
-					crc = UPDC32(c, crc);
+				while (rxpos-- && ((gotchar = getc(input_f)) != EOF))
+					crc = UPDC32(gotchar, crc);
 				crc = ~crc;
 				clearerr(input_f);	/* Clear EOF */
 				fseek(input_f, 0L, 0);
@@ -1852,8 +1835,10 @@ again:
 			zsbhdr(ZCRC, Txhdr);
 			goto again;
 		case ZSKIP:
-			if (input_f)
+			if (input_f) {
 				fclose(input_f);
+				input_f=NULL;
+			}
 #ifdef HAVE_MMAP
 			else if (mm_addr) {
 				munmap(mm_addr,mm_size);
@@ -1864,7 +1849,7 @@ again:
 			vfile("receiver skipped");
 			DO_SYSLOG((LOG_INFO, "%s/%s: receiver skipped",
 					   shortname, protname()));
-			return c;
+			return ZSKIP;
 		case ZRPOS:
 			/*
 			 * Suppress zcrcw request otherwise triggered by
@@ -1906,7 +1891,7 @@ zsendfdata (struct zm_fileinfo *zi)
 	if (use_mmap && !mm_addr)
 	{
 		struct stat st;
-		if (fstat (fileno (input_f), &st) == 0) {
+		if (fstat (fileno (input_f), &st) == 0 && st.st_size!=0) {
 			mm_size = st.st_size;
 			mm_addr = mmap (0, mm_size, PROT_READ,
 							MAP_SHARED, fileno (input_f), 0);
@@ -1936,23 +1921,29 @@ zsendfdata (struct zm_fileinfo *zi)
 	  gotack:
 		switch (c) {
 		default:
-			if (input_f)
+			if (input_f) {
 				fclose (input_f);
+				input_f=NULL;
+			}
 			DO_SYSLOG((LOG_INFO, "%s/%s: got %d",
 					   shortname, protname(), c));
 			return ERROR;
 		case ZCAN:
-			if (input_f)
+			if (input_f) {
 				fclose (input_f);
+				input_f=NULL;
+			}
 			DO_SYSLOG((LOG_INFO, "%s/%s: got ZCAN",
-					   shortname, protname(), c));
+					   shortname, protname()));
 			return ERROR;
 		case ZSKIP:
-			if (input_f)
+			if (input_f) {
 				fclose (input_f);
+				input_f=NULL;
+			}
 			DO_SYSLOG((LOG_INFO, "%s/%s: got ZSKIP",
-					   shortname, protname(), c));
-			return c;
+					   shortname, protname()));
+			return ZSKIP;
 		case ZACK:
 		case ZRPOS:
 			break;
@@ -2161,14 +2152,18 @@ zsendfdata (struct zm_fileinfo *zi)
 		case ZRINIT:
 			return OK;
 		case ZSKIP:
-			if (input_f)
+			if (input_f) {
 				fclose (input_f);
+				input_f=NULL;
+			}
 			DO_SYSLOG((LOG_INFO, "%s/%s: got ZSKIP",
 					   shortname, protname()));
 			return c;
 		default:
-			if (input_f)
+			if (input_f) {
 				fclose (input_f);
+				input_f=NULL;
+			}
 			DO_SYSLOG((LOG_INFO, "%s/%s: got %d",
 					   shortname, protname(), c));
 			return ERROR;
@@ -2303,12 +2298,12 @@ calcit:
 static int 
 getinsync(struct zm_fileinfo *zi, int flag)
 {
-	int c;
 	size_t rxpos;
 
 	for (;;) {
-		c = zgethdr(Rxhdr, 0, &rxpos);
-		switch (c) {
+		int gotblock;
+		gotblock = zgethdr(Rxhdr, 0, &rxpos);
+		switch (gotblock) {
 		case ZCAN:
 		case ZABORT:
 		case ZFIN:
@@ -2332,7 +2327,7 @@ getinsync(struct zm_fileinfo *zi, int flag)
 				error_count++;
 			}
 			Lastsync = rxpos;
-			return c;
+			return ZRPOS;
 		case ZACK:
 			Lrxpos = rxpos;
 			if (flag || zi->bytes_sent == rxpos)
@@ -2340,15 +2335,17 @@ getinsync(struct zm_fileinfo *zi, int flag)
 			continue;
 		case ZRINIT:
 		case ZSKIP:
-			if (input_f)
-				fclose(input_f);
+			if (input_f) {
+				fclose (input_f);
+				input_f=NULL;
+			}
 #ifdef HAVE_MMAP
 			else if (mm_addr) {
 				munmap(mm_addr,mm_size);
 				mm_addr=NULL;
 			}
 #endif
-			return c;
+			return ZSKIP;
 		case ERROR:
 		default:
 			error_count++;

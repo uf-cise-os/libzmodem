@@ -20,9 +20,9 @@ if [string compare "$omen_sz" 0] {
     	$objdir/../src/lrz "-q --errors 32768" $files
 } else {
 	set bn [file tail $omen_sz]
-	unsupported "compat-$bn: $bn not available"
-	unsupported "compat-$bn-delay: $bn not available"
-	unsupported "compat-$bn-errors: $bn not available"
+	unsupported "compat-omen-sz: omen.sz not available"
+	unsupported "compat-omen-sz-delay: omen.sz not available"
+	unsupported "compat-omen-sz-errors: omen.sz not available"
 }
 if [string compare "$zmtx" 0] {
 	set bn [file tail $zmtx]

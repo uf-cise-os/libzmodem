@@ -6,13 +6,6 @@ noinst_SCRIPTS=systype
 PR=@PACKAGE@-@VERSION@
 CLEAN_FILES=fastcheck.done
 
-dist-hook:
-	mkdir $(distdir)/debian
-	cp -fa $(srcdir)/debian/changelog  $(distdir)/debian/
-	cp -fa $(srcdir)/debian/control  $(distdir)/debian/
-	cp -fa $(srcdir)/debian/copyright  $(distdir)/debian/
-	cp -fa $(srcdir)/debian/rules.in  $(distdir)/debian/
-
 oldcheck-local:
 	QUIET=-q $(srcdir)/check.lrzsz $(srcdir) `pwd`	
 

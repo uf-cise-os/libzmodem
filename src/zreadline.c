@@ -44,9 +44,9 @@ int readline_left=0;
 char *readline_ptr;
 
 static RETSIGTYPE
-zreadline_alarm_handler(int dummy LRZSZ_ATTRIB_UNUSED)
+zreadline_alarm_handler(int dummy)
 {
-	/* doesn't need to do anything */
+	dummy++; /* doesn't need to do anything */
 }
 
 /*

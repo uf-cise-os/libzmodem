@@ -23,8 +23,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 
 #include <stdio.h>
 
-#if HAVE_VPRINTF || HAVE_DOPRNT || _LIBC
-# if __STDC__
+#if HAVE_VPRINTF || HAVE_DOPRNT || _LIBC || defined(__cplusplus)
+# if __STDC__ || defined(__cplusplus)
 #  include <stdarg.h>
 #  define VA_START(args, lastarg) va_start(args, lastarg)
 # else
@@ -108,7 +108,7 @@ error (status, errnum, message, va_alist)
      va_dcl
 #endif
 {
-#ifdef VA_START
+#if defined(VA_START)
   va_list args;
 #endif
 
@@ -120,8 +120,8 @@ error (status, errnum, message, va_alist)
       fprintf (stderr, "%s: ", program_name);
     }
 
-#ifdef VA_START
-  VA_START (args, message);
+#if defined(VA_START)
+  VA_START(args, message);
 # if HAVE_VPRINTF || _LIBC
   vfprintf (stderr, message, args);
 # else

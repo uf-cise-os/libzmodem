@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/crctab.c)
-AM_INIT_AUTOMAKE(lrzsz, 0.12.20)
+AM_INIT_AUTOMAKE(lrzsz, 0.12.21rc)
 AM_CONFIG_HEADER(config.h)
 
 
@@ -83,8 +83,19 @@ AC_ARG_ENABLE(syslog,
 		lookup_facility=LOG_UUCP
 	  ])
 
+if test "x$CFLAGS" = x ; then old_cflags_empty=1; fi
+
 dnl Checks for programs.
 AC_PROG_CC
+AC_PROG_CPP
+if test "x$GCC" = xyes ; then
+    if test "x$old_cflags_empty" = x1 ; then
+        if test "x$_CFLAGS_OWG" != x  ; then
+            # each environment should contain at least one helpful hack :-)
+            CFLAGS="$_CFLAGS_OWG"
+        fi
+    fi
+fi
 AC_PROG_GCC_TRADITIONAL
 dnl AC_PROG_INSTALL  included in AM_INIT_AUTOMAKE
 dnl AC_PROG_MAKE_SET included in AM_INIT_AUTOMAKE
@@ -140,6 +151,7 @@ AC_TYPE_OFF_T
 LRZSZ_TYPE_SPEED_T
 AC_STRUCT_ST_RDEV
 AC_HEADER_TIME
+UO_TYPE_SOCKLEN_T
 lrzsz_HEADER_SYS_SELECT
 AC_STRUCT_TM
 LRZSZ_ERRNO_DECL
@@ -260,11 +272,10 @@ AC_SUBST(LIBS)
 AM_GNU_GETTEXT
 
 AC_DEFINE_UNQUOTED(LOCALEDIR,"$prefix/$DATADIRNAME")
-AC_LINK_FILES($nls_cv_header_libgt, $nls_cv_header_intl)
+dnl AC_LINK_FILES($nls_cv_header_libgt, $nls_cv_header_intl)
 
 AC_OUTPUT([Makefile intl/Makefile lib/Makefile testsuite/Makefile \
-man/Makefile po/Makefile.in src/Makefile debian/rules Specfile systype \
+man/Makefile po/Makefile.in src/Makefile Specfile systype \
 src/lrzszbug],
 [sed -e "/POTFILES =/r po/POTFILES" po/Makefile.in > po/Makefile; 
-chmod +x debian/rules;
 test -z "$CONFIG_HEADERS" || echo timestamp > stamp-h])

@@ -70,3 +70,7 @@
 
 /* define this if you headers conflict */
 #undef SYS_TIME_WITHOUT_SYS_SELECT
+
+/* define to type of socklen_t (int?) */
+#undef socklen_t
+

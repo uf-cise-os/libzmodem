@@ -110,9 +110,6 @@
 /* Define to 1 if your utime() takes struct utimbuf as second argument */
 #undef HAVE_STRUCT_UTIMBUF
 
-/* Define to 1 if ANSI function prototypes are usable.  */
-#undef PROTOTYPES
-
 /* Define to LOG_xxx (a syslog facility) if syslog() shall be used */
 #undef ENABLE_SYSLOG
 
@@ -149,6 +146,9 @@
 
 /* define this if you headers conflict */
 #undef SYS_TIME_WITHOUT_SYS_SELECT
+
+/* define to type of socklen_t (int?) */
+#undef socklen_t
 
 /* Define if you have the __argz_count function.  */
 #undef HAVE___ARGZ_COUNT
@@ -321,9 +321,6 @@
 /* Define if you have the <utime.h> header file.  */
 #undef HAVE_UTIME_H
 
-/* Define if you have the <values.h> header file.  */
-#undef HAVE_VALUES_H
-
 /* Define if you have the be library (-lbe).  */
 #undef HAVE_LIBBE
 
@@ -335,3 +332,13 @@
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET
+
+/* Name of package */
+#undef PACKAGE
+
+/* Version number of package */
+#undef VERSION
+
+/* Define if compiler has function prototypes */
+#undef PROTOTYPES
+

@@ -1,6 +1,6 @@
-# Makefile.in generated automatically by automake 1.3 from Makefile.am
+# Makefile.in generated automatically by automake 1.4a from Makefile.am
 
-# Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
@@ -11,7 +11,7 @@
 # PARTICULAR PURPOSE.
 
 
-SHELL = /bin/sh
+SHELL = @SHELL@
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -31,7 +31,7 @@ mandir = @mandir@
 includedir = @includedir@
 oldincludedir = /usr/include
 
-DISTDIR =
+DESTDIR =
 
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
@@ -48,6 +48,7 @@ INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
+INSTALL_STRIP_FLAG =
 transform = @program_transform_name@
 
 NORMAL_INSTALL = :
@@ -89,17 +90,17 @@ USE_NLS = @USE_NLS@
 VERSION = @VERSION@
 l = @l@
 
-bin_PROGRAMS=lrz lsz
-lrz_SOURCES=lrz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c tcp.c lsyslog.c canit.c
-lsz_SOURCES=lsz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c tcp.c lsyslog.c canit.c
+bin_PROGRAMS = lrz lsz
+lrz_SOURCES = lrz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c tcp.c lsyslog.c canit.c
+lsz_SOURCES = lsz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c tcp.c lsyslog.c canit.c
 noinst_HEADERS = timing.h zglobal.h zmodem.h
 datadir = $(prefix)/@DATADIRNAME@
 localedir = $(datadir)/locale
-CFLAGS=@CFLAGS@
-DISTCLEAN_FILES=lrzszbug
+CFLAGS = @CFLAGS@
+DISTCLEAN_FILES = lrzszbug
 
 LDADD = ../lib/libzmodem.a @INTLLIBS@
-AUTOMAKE_OPTIONS=ansi2knr
+AUTOMAKE_OPTIONS = ansi2knr
 EXTRA_DIST = ansi2knr.1 ansi2knr.c lrzszbug.in
 INCLUDES = -I.. -I$(srcdir) -I$(top_srcdir)/src -I../intl -I$(top_srcdir)/lib
 #DEFS = -DLOCALEDIR=\"$(localedir)\" -DOS=\"@host_os@\" -DCPU=\"@host_cpu@\"
@@ -121,8 +122,9 @@ rbsb$U.o zm$U.o protname$U.o tcp$U.o lsyslog$U.o canit$U.o
 lsz_LDADD = $(LDADD)
 lsz_DEPENDENCIES =  ../lib/libzmodem.a
 lsz_LDFLAGS = 
-COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
-LINK = $(CC) $(CFLAGS) $(LDFLAGS) -o $@
+COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+CCLD = $(CC)
+LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
 HEADERS =  $(noinst_HEADERS)
 
 DIST_COMMON =  Makefile.am Makefile.in ansi2knr.1 ansi2knr.c lrzszbug.in
@@ -130,24 +132,26 @@ DIST_COMMON =  Makefile.am Makefile.in ansi2knr.1 ansi2knr.c lrzszbug.in
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
-TAR = tar
-GZIP = --best
+TAR = gtar
+GZIP_ENV = --best
+DEP_FILES =  .deps/canit.P .deps/crctab.P .deps/lrz.P .deps/lsyslog.P \
+.deps/lsz.P .deps/protname.P .deps/rbsb.P .deps/tcp.P .deps/timing.P \
+.deps/zm.P .deps/zperr.P .deps/zreadline.P
 SOURCES = $(lrz_SOURCES) $(lsz_SOURCES)
 OBJECTS = $(lrz_OBJECTS) $(lsz_OBJECTS)
 
-all: Makefile $(ANSI2KNR) $(PROGRAMS) $(HEADERS)
-
+all: all-redirect
 .SUFFIXES:
 .SUFFIXES: .S .c .o .s
-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4)
-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps src/Makefile
+$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu src/Makefile
 
-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
 lrzszbug: $(top_builddir)/config.status lrzszbug.in
-	cd $(top_builddir) && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= ./config.status
+	cd $(top_builddir) && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
 mostlyclean-binPROGRAMS:
 
@@ -163,19 +167,16 @@ install-binPROGRAMS: $(bin_PROGRAMS)
 	$(mkinstalldirs) $(DESTDIR)$(bindir)
 	@list='$(bin_PROGRAMS)'; for p in $$list; do \
 	  if test -f $$p; then \
-	    echo "  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`"; \
-	     $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`; \
+	    echo "  $(INSTALL_PROGRAM) $(INSTALL_STRIP_FLAG) $$p $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`"; \
+	     $(INSTALL_PROGRAM) $(INSTALL_STRIP_FLAG) $$p $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
 	  else :; fi; \
 	done
 
 uninstall-binPROGRAMS:
 	@$(NORMAL_UNINSTALL)
 	list='$(bin_PROGRAMS)'; for p in $$list; do \
-	  rm -f $(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`; \
+	  rm -f $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
 	done
-
-.c.o:
-	$(COMPILE) -c $<
 
 .s.o:
 	$(COMPILE) -c $<
@@ -223,37 +224,41 @@ lsz: $(lsz_OBJECTS) $(lsz_DEPENDENCIES)
 	@rm -f lsz
 	$(LINK) $(lsz_LDFLAGS) $(lsz_OBJECTS) $(lsz_LDADD) $(LIBS)
 canit_.c: canit.c $(ANSI2KNR)
-	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/canit.c; then echo $(srcdir)/canit.c; else echo canit.c; fi` | $(ANSI2KNR) canit_.c
+	$(CPP) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/canit.c; then echo $(srcdir)/canit.c; else echo canit.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > canit_.c
 crctab_.c: crctab.c $(ANSI2KNR)
-	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/crctab.c; then echo $(srcdir)/crctab.c; else echo crctab.c; fi` | $(ANSI2KNR) crctab_.c
+	$(CPP) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/crctab.c; then echo $(srcdir)/crctab.c; else echo crctab.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > crctab_.c
 lrz_.c: lrz.c $(ANSI2KNR)
-	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/lrz.c; then echo $(srcdir)/lrz.c; else echo lrz.c; fi` | $(ANSI2KNR) lrz_.c
+	$(CPP) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/lrz.c; then echo $(srcdir)/lrz.c; else echo lrz.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > lrz_.c
 lsyslog_.c: lsyslog.c $(ANSI2KNR)
-	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/lsyslog.c; then echo $(srcdir)/lsyslog.c; else echo lsyslog.c; fi` | $(ANSI2KNR) lsyslog_.c
+	$(CPP) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/lsyslog.c; then echo $(srcdir)/lsyslog.c; else echo lsyslog.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > lsyslog_.c
 lsz_.c: lsz.c $(ANSI2KNR)
-	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/lsz.c; then echo $(srcdir)/lsz.c; else echo lsz.c; fi` | $(ANSI2KNR) lsz_.c
+	$(CPP) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/lsz.c; then echo $(srcdir)/lsz.c; else echo lsz.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > lsz_.c
 protname_.c: protname.c $(ANSI2KNR)
-	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/protname.c; then echo $(srcdir)/protname.c; else echo protname.c; fi` | $(ANSI2KNR) protname_.c
+	$(CPP) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/protname.c; then echo $(srcdir)/protname.c; else echo protname.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > protname_.c
 rbsb_.c: rbsb.c $(ANSI2KNR)
-	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/rbsb.c; then echo $(srcdir)/rbsb.c; else echo rbsb.c; fi` | $(ANSI2KNR) rbsb_.c
+	$(CPP) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/rbsb.c; then echo $(srcdir)/rbsb.c; else echo rbsb.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > rbsb_.c
 tcp_.c: tcp.c $(ANSI2KNR)
-	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/tcp.c; then echo $(srcdir)/tcp.c; else echo tcp.c; fi` | $(ANSI2KNR) tcp_.c
+	$(CPP) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/tcp.c; then echo $(srcdir)/tcp.c; else echo tcp.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > tcp_.c
 timing_.c: timing.c $(ANSI2KNR)
-	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/timing.c; then echo $(srcdir)/timing.c; else echo timing.c; fi` | $(ANSI2KNR) timing_.c
+	$(CPP) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/timing.c; then echo $(srcdir)/timing.c; else echo timing.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > timing_.c
 zm_.c: zm.c $(ANSI2KNR)
-	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/zm.c; then echo $(srcdir)/zm.c; else echo zm.c; fi` | $(ANSI2KNR) zm_.c
+	$(CPP) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/zm.c; then echo $(srcdir)/zm.c; else echo zm.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > zm_.c
 zperr_.c: zperr.c $(ANSI2KNR)
-	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/zperr.c; then echo $(srcdir)/zperr.c; else echo zperr.c; fi` | $(ANSI2KNR) zperr_.c
+	$(CPP) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/zperr.c; then echo $(srcdir)/zperr.c; else echo zperr.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > zperr_.c
 zreadline_.c: zreadline.c $(ANSI2KNR)
-	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/zreadline.c; then echo $(srcdir)/zreadline.c; else echo zreadline.c; fi` | $(ANSI2KNR) zreadline_.c
+	$(CPP) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/zreadline.c; then echo $(srcdir)/zreadline.c; else echo zreadline.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > zreadline_.c
 canit_.o crctab_.o lrz_.o lsyslog_.o lsz_.o protname_.o rbsb_.o tcp_.o \
 timing_.o zm_.o zperr_.o zreadline_.o : $(ANSI2KNR)
 
 tags: TAGS
 
 ID: $(HEADERS) $(SOURCES) $(LISP)
+	list='$(SOURCES) $(HEADERS)'; \
+	unique=`for i in $$list; do echo $$i; done | \
+	  awk '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
 	here=`pwd` && cd $(srcdir) \
-	  && mkid -f$$here/ID $(SOURCES) $(HEADERS) $(LISP)
+	  && mkid -f$$here/ID $$unique $(LISP)
 
 TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) $(LISP)
 	tags=; \
@@ -279,82 +284,115 @@ distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
 subdir = src
 
 distdir: $(DISTFILES)
+	here=`cd $(top_builddir) && pwd`; \
+	top_distdir=`cd $(top_distdir) && pwd`; \
+	distdir=`cd $(distdir) && pwd`; \
+	cd $(top_srcdir) \
+	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu src/Makefile
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
-	  test -f $(distdir)/$$file \
-	  || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
-	  || cp -p $$d/$$file $(distdir)/$$file; \
+	  if test -d $$d/$$file; then \
+	    cp -pr $$d/$$file $(distdir)/$$file; \
+	  else \
+	    test -f $(distdir)/$$file \
+	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
+	    || cp -p $$d/$$file $(distdir)/$$file || :; \
+	  fi; \
 	done
-canit.o: canit.c zglobal.h ../config.h zmodem.h ../lib/getopt.h
-crctab.o: crctab.c
-lrz.o: lrz.c zglobal.h ../config.h zmodem.h ../lib/getopt.h timing.h \
-	../lib/long-options.h ../lib/xstrtoul.h ../lib/xstrtol.h \
-	../lib/error.h
-lsyslog.o: lsyslog.c ../config.h zglobal.h zmodem.h
-lsz.o: lsz.c zglobal.h ../config.h zmodem.h ../lib/getopt.h timing.h \
-	../lib/long-options.h ../lib/xstrtoul.h ../lib/xstrtol.h \
-	../lib/error.h
-protname.o: protname.c zglobal.h ../config.h zmodem.h
-rbsb.o: rbsb.c zglobal.h ../config.h zmodem.h
-tcp.o: tcp.c ../config.h zglobal.h zmodem.h ../lib/error.h
-timing.o: timing.c zglobal.h ../config.h zmodem.h timing.h
-zm.o: zm.c zglobal.h ../config.h zmodem.h
-zperr.o: zperr.c zglobal.h ../config.h zmodem.h
-zreadline.o: zreadline.c zglobal.h ../config.h zmodem.h ../lib/error.h
 
-info:
-dvi:
-check: all
-	$(MAKE)
-installcheck:
-install-exec: install-binPROGRAMS install-exec-local
-	@$(NORMAL_INSTALL)
+DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
 
-install-data: 
-	@$(NORMAL_INSTALL)
+-include $(DEP_FILES)
 
-install: install-exec install-data all
-	@:
+mostlyclean-depend:
 
-uninstall: uninstall-binPROGRAMS uninstall-local
+clean-depend:
 
+distclean-depend:
+	-rm -rf .deps
+
+maintainer-clean-depend:
+
+%.o: %.c
+	@echo '$(COMPILE) -c $<'; \
+	$(COMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
+	@-cp .deps/$(*F).pp .deps/$(*F).P; \
+	tr ' ' '\012' < .deps/$(*F).pp \
+	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
+	    >> .deps/$(*F).P; \
+	rm .deps/$(*F).pp
+
+%.lo: %.c
+	@echo '$(LTCOMPILE) -c $<'; \
+	$(LTCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
+	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
+	  < .deps/$(*F).pp > .deps/$(*F).P; \
+	tr ' ' '\012' < .deps/$(*F).pp \
+	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
+	    >> .deps/$(*F).P; \
+	rm -f .deps/$(*F).pp
+info-am:
+info: info-am
+dvi-am:
+dvi: dvi-am
+check-am: all-am
+check: check-am
+installcheck-am:
+installcheck: installcheck-am
+install-exec-am: install-binPROGRAMS install-exec-local
+install-exec: install-exec-am
+
+install-data-am:
+install-data: install-data-am
+
+install-am: all-am
+	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
+install: install-am
+uninstall-am: uninstall-binPROGRAMS uninstall-local
+uninstall: uninstall-am
+all-am: Makefile $(ANSI2KNR) $(PROGRAMS) $(HEADERS)
+all-redirect: all-am
 install-strip:
-	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' INSTALL_SCRIPT='$(INSTALL_PROGRAM)' install
+	$(MAKE) $(AM_MAKEFLAGS) INSTALL_STRIP_FLAG=-s install
 installdirs:
-	$(mkinstalldirs)  $(DATADIR)$(bindir)
+	$(mkinstalldirs)  $(DESTDIR)$(bindir)
 
 
 mostlyclean-generic:
-	-test -z "$(MOSTLYCLEANFILES)" || rm -f $(MOSTLYCLEANFILES)
 
 clean-generic:
-	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
-	-rm -f Makefile $(DISTCLEANFILES)
+	-rm -f Makefile $(CONFIG_CLEAN_FILES)
 	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
-	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 
 maintainer-clean-generic:
-	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
-	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
-mostlyclean:  mostlyclean-binPROGRAMS mostlyclean-compile \
+mostlyclean-am:  mostlyclean-binPROGRAMS mostlyclean-compile \
 		mostlyclean-krextra mostlyclean-kr mostlyclean-tags \
-		mostlyclean-generic
+		mostlyclean-depend mostlyclean-generic
 
-clean:  clean-binPROGRAMS clean-compile clean-krextra clean-kr \
-		clean-tags clean-generic mostlyclean
+mostlyclean: mostlyclean-am
 
-distclean:  distclean-binPROGRAMS distclean-compile distclean-krextra \
-		distclean-kr distclean-tags distclean-generic clean
-	-rm -f config.status
+clean-am:  clean-binPROGRAMS clean-compile clean-krextra clean-kr \
+		clean-tags clean-depend clean-generic mostlyclean-am
 
-maintainer-clean:  maintainer-clean-binPROGRAMS maintainer-clean-compile \
-		maintainer-clean-krextra maintainer-clean-kr \
-		maintainer-clean-tags maintainer-clean-generic \
-		distclean
+clean: clean-am
+
+distclean-am:  distclean-binPROGRAMS distclean-compile distclean-krextra \
+		distclean-kr distclean-tags distclean-depend \
+		distclean-generic clean-am
+
+distclean: distclean-am
+
+maintainer-clean-am:  maintainer-clean-binPROGRAMS \
+		maintainer-clean-compile maintainer-clean-krextra \
+		maintainer-clean-kr maintainer-clean-tags \
+		maintainer-clean-depend maintainer-clean-generic \
+		distclean-am
 	@echo "This command is intended for maintainers to use;"
 	@echo "it deletes files that may require special tools to rebuild."
+
+maintainer-clean: maintainer-clean-am
 
 .PHONY: mostlyclean-binPROGRAMS distclean-binPROGRAMS clean-binPROGRAMS \
 maintainer-clean-binPROGRAMS uninstall-binPROGRAMS install-binPROGRAMS \
@@ -362,10 +400,14 @@ mostlyclean-compile distclean-compile clean-compile \
 maintainer-clean-compile mostlyclean-krextra distclean-krextra \
 clean-krextra maintainer-clean-krextra mostlyclean-kr distclean-kr \
 clean-kr maintainer-clean-kr tags mostlyclean-tags distclean-tags \
-clean-tags maintainer-clean-tags distdir info dvi installcheck \
-install-exec install-data install uninstall all installdirs \
-mostlyclean-generic distclean-generic clean-generic \
-maintainer-clean-generic clean mostlyclean distclean maintainer-clean
+clean-tags maintainer-clean-tags distdir mostlyclean-depend \
+distclean-depend clean-depend maintainer-clean-depend info-am info \
+dvi-am dvi check check-am installcheck-am installcheck \
+install-exec-local install-exec-am install-exec install-data-am \
+install-data install-am install uninstall-local uninstall-am uninstall \
+all-redirect all-am all installdirs mostlyclean-generic \
+distclean-generic clean-generic maintainer-clean-generic clean \
+mostlyclean distclean maintainer-clean
 
 
 install-exec-local:

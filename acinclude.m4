@@ -73,3 +73,23 @@ if test $lrzsz_cv_header_sys_select = no; then
 fi
 ])
 
+AC_DEFUN(UO_TYPE_SOCKLEN_T,[
+AC_CACHE_CHECK([for socklen_t],ac_cv_type_socklen_t,
+    [AC_TRY_COMPILE([
+#include "confdefs.h"
+#include <sys/types.h>
+#include <sys/socket.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+    ],[socklen_t x=0;return x;]
+    ,ac_cv_type_socklen_t=yes,ac_cv_type_socklen_t=no)]
+)
+if test $ac_cv_type_socklen_t = no; then
+cat >> confdefs.h <<\EOF
+#define socklen_t int
+EOF
+  AC_DEFINE([socklen_t],int)
+fi
+]) dnl DEFUN

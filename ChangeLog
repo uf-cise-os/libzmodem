@@ -1,3 +1,41 @@
+1998-06-15	Uwe Ohse  <uwe@ohse.de>
+
+	* src/rbsb.c (io_mode), case 1:
+	  disable IEXTEN, from Usman Muzaffar <usman@thynne.psych.nwu.edu>.
+
+1998-06-15	Uwe Ohse  <uwe@ohse.de>
+
+	* src/lsz.c: Transfering 0 byte files with Zmodem made lsz crash.
+
+1998-06-03	Uwe Ohse  <uwe@ohse.de>
+
+	* update to automake-1.4, autoconf-2.13.
+	
+	* configure.in:
+	- version number set to 0.12.21
+	- Threw out explicit AC_LINK_FILES statement in configure.in.
+
+1998-03-21 Uwe Ohse	<uwe@ohse.de>
+	* configure.in, aclocal.m4: check for socklen_t.
+	* check.lrzsz: threw out tcp inband checks.
+	* src/lrz.c: threw out tcp inband stuff (--tcp). The only
+	  user doesn't need it anymore.
+	  changed static SEGMENTS buffer to dynamic allocation.
+	  make some global variables static.
+	* src/lsz.c: threw out tcp inband stuff (--tcp). The only
+	  user doesn't need it anymore.
+	  allocate receive-buffer dynamically.
+	* src/tcp.c: change a size_t to socklen_t.
+	* zm.c: prototype for zsendline_s.
+
+1998-02-06	Uwe Ohse  <uwe@ohse.de>
+
+	* debian/*
+	* Makefile.am:
+	* configure.in:
+	  removed support for debian, on mail from
+	  Josip Rodin <joy@cibalia.gkvk.hr>.
+
 1998-12-29	Uwe Ohse  <uwe@ohse.de>
 
 	* src/lrz.c: removed stpcpy call.
