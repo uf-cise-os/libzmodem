@@ -20,6 +20,7 @@ char *substr(), *getenv();
 #include <setjmp.h>
 #include <ctype.h>
 #include <errno.h>
+#include "timing.h"
 extern int errno;
 #define sendline(c) putchar(c & 0377)
 #define xsendline(c) putchar(c)
@@ -61,7 +62,7 @@ int errors;
 #include "crctab.c"
 
 int Filesleft;
-long Totalleft;
+long Totalleft,Filesize;
 
 /*
  * Attention string to be executed by receiver to interrupt streaming data
@@ -319,10 +320,12 @@ char *argv[];
 	if (npats < 1 && !Command && !Test) 
 		usage();
 	if (Verbose) {
+#if 0
 		if (freopen(LOGFILE, "a", stderr)==NULL) {
 			printf("Can't open log file %s\n",LOGFILE);
 			exit(0200);
 		}
+#endif
 		setbuf(stderr, NULL);
 	}
 	if (Fromcu && !Quiet) {
@@ -449,6 +452,7 @@ char *oname;
 		++errcnt;
 		return OK;	/* pass over it, there may be others */
 	}
+	timing(1);
 	BEofseen = Eofseen = 0;  vpos = 0;
 	/* Check for directory or block special files */
 	fstat(fileno(in), &f);
@@ -524,7 +528,9 @@ char *name;
 	if (!Ascii && (in!=stdin) && *name && fstat(fileno(in), &f)!= -1)
 		sprintf(p, "%lu %lo %o 0 %d %ld", f.st_size, f.st_mtime,
 		  f.st_mode, Filesleft, Totalleft);
+	fprintf(stderr, "Sending: %s\n",name);
 	Totalleft -= f.st_size;
+	Filesize = f.st_size;
 	if (--Filesleft <= 0)
 		Totalleft = 0;
 	if (Totalleft < 0)
@@ -1193,6 +1199,7 @@ zsendfdata()
 	register long tcount = 0;
 	int junkcount;		/* Counts garbage chars received by TX */
 	static int tleft = 6;	/* Counter for test mode */
+	int savebps;
 
 	Lrxpos = 0;
 	junkcount = 0;
@@ -1313,8 +1320,18 @@ gotack:
 		}
 		else
 			e = ZCRCG;
-		if (Verbose>1)
-			fprintf(stderr, "\rZmodem bytes sent: %7ld",Txpos);
+		if (Verbose>1) {
+			long bps=(Txpos/timing(0));
+			int minleft =  0;
+			int secleft =  0;
+			if (bps > 0) {
+				minleft =  (Filesize-Txpos)/bps/60;
+				secleft =  ((Filesize-Txpos)/bps)%60;
+			}
+			savebps = bps;
+			fprintf(stderr, "\rBytes Sent:%7ld/%7ld   BPS:%-6d ETA %02d:%02d  ",
+			 Txpos, Filesize, bps, minleft, secleft);
+		}
 		zsdata(txbuf, n, e);
 		bytcnt = Txpos += n;
 		if (e == ZCRCW)
@@ -1372,6 +1389,8 @@ gotack:
 			vfile("window = %ld", tcount);
 		}
 	} while (!Eofseen);
+	fprintf(stderr, "\rBytes Sent:%7ld   BPS:%-6d                       \n",
+		Filesize,savebps);
 	if ( !Fromcu)
 		signal(SIGINT, SIG_IGN);
 
