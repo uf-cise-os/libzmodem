@@ -19,6 +19,7 @@
 #include <setjmp.h>
 #include <ctype.h>
 #include <errno.h>
+#include "timing.h"
 extern int errno;
 FILE *popen();
 
@@ -227,12 +228,14 @@ char *argv[];
 	if (Batch && npats)
 		usage();
 	if (Verbose) {
+#if 0
 		if (freopen(LOGFILE, "a", stderr)==NULL) {
 			printf("Can't open log file %s\n",LOGFILE);
 			exit(0200);
 		}
-		setbuf(stderr, NULL);
 		fprintf(stderr, "argv[0]=%s Progname=%s\n", virgin, Progname);
+#endif
+		setbuf(stderr, NULL);
 	}
 	if (Fromcu && !Quiet) {
 		if (Verbose == 0)
@@ -337,6 +340,7 @@ char **argp;
 			return ERROR;
 		if (wcrx()==ERROR)
 			goto fubar;
+                timing(1);
 	}
 	return OK;
 fubar:
@@ -676,6 +680,7 @@ char *name;
 		strcpy(Pathname, name);
                 if (Verbose)
                         fprintf(stderr, "\nReceiving: %s\n", name);
+		timing(1);
 		checkpath(name);
 		if (Nflag)
 			name = "/dev/null";
@@ -1191,8 +1196,17 @@ nxthdr:
 				zmputs(Attn);  continue;
 			}
 moredata:
-			if (Verbose>1)
-				fprintf(stderr, "\rBytes received: %7ld/%7ld", rxbytes, Bytesleft);
+			if (Verbose>1) {
+				long bps=(rxbytes/timing(0));
+				int minleft =  0;
+				int secleft =  0;
+				if (bps > 0) {
+					minleft =  (Bytesleft-rxbytes)/bps/60;
+					secleft =  ((Bytesleft-rxbytes)/bps)%60;
+				}
+				fprintf(stderr, "\rBytes Received:%7ld/%7ld   BPS:%-6ld ETA %02d:%02d  ",
+				 rxbytes, Bytesleft, bps, minleft, secleft);
+			}
 #ifdef SEGMENTS
 			if (chinseg >= (1024 * SEGMENTS)) {
 				putsec(secbuf, chinseg);
@@ -1242,7 +1256,7 @@ moredata:
 #endif
 				rxbytes += Rxcount;
 				if (Verbose>1)
-				  fprintf(stderr, "\rBytes received: %7ld/%7ld", rxbytes, Bytesleft);
+				  fprintf(stderr, "\rBytes received: %7ld/%7ld: %7ld Bytes per sec", rxbytes, Bytesleft, (long)(rxbytes/timing(0)));
 				stohdr(rxbytes);
 				zshhdr(ZACK, Txhdr);
 				sendline(XON);
@@ -1276,7 +1290,7 @@ moredata:
 #endif
 				rxbytes += Rxcount;
 				if (Verbose>1)
-				  fprintf(stderr, "\rBytes received: %7ld/%7ld", rxbytes, Bytesleft);
+				  fprintf(stderr, "\rBytes received: %7ld/%7ld: %7ld Bytes per sec", rxbytes, Bytesleft, (long)(rxbytes/timing(0)));
 				goto nxthdr;
 			}
 		}
