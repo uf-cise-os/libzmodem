@@ -1,11 +1,12 @@
+'\"
 '\" Revision Level 
 '\" Last Delta     04-21-88
-.TH SZ 1 OMEN
+.TH SZ 1 2.6.1996 lrzsz-0.12b
 .SH NAME
 sx, sb, sz \- XMODEM, YMODEM, ZMODEM file send
 .SH SYNOPSIS
 sz
-.RB [\- +abdefkLlNnopqTtuvyY ]
+.RB [\- +8abdefkLlNnopqTtuvyY ]
 .I file ...
 .br
 sb
@@ -130,7 +131,7 @@ protocol
 (sometimes incorrectly called "ymodem").
 The user must supply the file name to both sending and receiving programs.
 
-Iff
+If
 .B sz
 is invoked with $SHELL set and iff that variable contains the
 string
@@ -178,12 +179,19 @@ The meanings of the available options are:
 .PP
 .PD 0
 .TP
-\\
-(backslash) (VMS) Force the next option letter to upper case.
+.B \\\\
+(backslash). Force the next option letter to upper case.
 .TP
 .B +
 Instruct the receiver to append transmitted data to an existing file
 (ZMODEM only).
+.TP 
+.B 2
+use two stop bits (if possible). Do not use this unless you know
+what you are doing.
+.TP
+.B 8
+Use 8KB blocksize (incompatible with standard zmodem) (ZMODEM only).
 .TP
 .B a
 Convert NL characters in the transmitted file to CR/LF.
@@ -196,12 +204,19 @@ for ZMODEM.
 .B "c COMMAND"
 Send COMMAND to the receiver for execution, return with COMMAND\'s exit status.
 .TP
+.B C N
+Retry to send command N times (default: 11).
+.TP
 .B d
 Change all instances of "." to "/" in the transmitted pathname.
 Thus, C.omenB0000 (which is unacceptable to MSDOS or CP/M)
 is transmitted as C/omenB0000.
 If the resultant filename has more than 8 characters in the stem,
 a "." is inserted to allow a total of eleven.
+
+This option enables the 
+.B f
+option.
 .TP
 .B e
 Escape all control characters;
@@ -211,6 +226,13 @@ normally XON, XOFF, DLE, CR-@-CR, and Ctrl-X are escaped.
 Send Full pathname.
 Normally directory prefixes are stripped from the transmitted
 filename.
+
+This is also turned on with to 
+.B d
+option.
+.TP
+.B h
+give help.
 .TP
 .B "i COMMAND"
 Send COMMAND to the receiver for execution, return Immediately
@@ -250,6 +272,14 @@ source file is newer or longer than the destination file.
 .B o
 (ZMODEM) Disable automatic selection of 32 bit CRC.
 .TP
+.B O
+Disable read timeout handling. This makes lsz hang if the other side
+doesn't send anything, but increases performance (not much) and
+decreases system load (reduces number of system calls by about 50
+percent).
+
+Use this option with care.
+.TP
 .B p
 (ZMODEM) Protect existing destination files by skipping transfer if the
 destination file exists.
@@ -257,11 +287,22 @@ destination file exists.
 .B q
 Quiet suppresses verbosity.
 .TP
+.B R
+Restricted mode: restricts pathnames to the current directory and
+PUBDIR (usually /usr/spool/uucppublic) and/or subdirectories
+thereof.
+.TP
 .B r
 (ZMODEM) Resume interrupted file transfer.
 If the source file is longer than the destination file,
 the transfer commences at the offset in the source file that equals
 the length of the destination file.
+.TP
+.B S
+enable timesync protocol support. See timesync.doc for further 
+information.
+
+This option is incompatible with standard zmodem. Use it with care.
 .TP
 .B "t tim"
 Change timeout to
@@ -271,15 +312,15 @@ tenths of seconds.
 .B u
 Unlink the file after successful transmission.
 .TP
+.B U
+Turn off restricted mode (this is not possible if running under a 
+restricted shell).
+.TP
 .B "w N"
 Limit the transmit window size to N bytes (ZMODEM).
 .TP
 .B v
-Verbose
-causes a list of file
-names to be appended to
-/tmp/szlog .
-More v's generate more output.
+Verbose output to stderr. More v's generate more output.
 .TP
 .B y
 Instruct a ZMODEM receiving program to overwrite any existing file
@@ -291,6 +332,43 @@ with the same name,
 and to skip any source files that do have a file with the same
 pathname on the destination system.
 .PD
+.SH SECURITY
+Restricted mode restricts pathnames to the current directory
+and PUBDIR (usually /var/spool/uucppublic)
+and/or subdirectories thereof, and disables remote command
+execution.
+
+Restricted mode is entered if the 
+.B R
+option is given or if lsz detects that it runs under a restricted
+shell or if the environment variable ZMODEM_RESTRICTED is found.
+
+Restricted mode can be turned of with the 
+.B U
+option if not running under a restricted shell.
+
+.SH ENVIRONMENT
+.TP
+.B ZNULLS
+may be used to specify the number of nulls to send before a ZDATA frame.
+.TP
+.B SHELL
+lsz recognizes a restricted shell if this variable includes
+.I "rsh"
+or
+.I "rksh"
+.TP
+.B ZMODEM_RESTRICTED
+lrz enters restricted mode if the variable is set.
+.TP
+.B TMPDIR
+If this environment variable is set its content is used as the 
+directory to place in the answer file to a 
+.B timesync 
+request.
+.B TMP
+Used instead of TMPDIR if TMPDIR is not set. If neither TMPDIR nor
+TMP is set /tmp will be used.
 .SH EXAMPLES
 .ne 7
 .B "ZMODEM File Transfer"

@@ -68,6 +68,8 @@
 #define CANFC32	040	/* Receiver can use 32 bit Frame Check */
 #define ESCCTL 0100	/* Receiver expects ctl chars to be escaped */
 #define ESC8   0200	/* Receiver expects 8th bit to be escaped */
+/* Bit Masks for ZRINIT flags byze ZF1 */
+#define ZF1_TIMESYNC 02 /* nonstandard, Receiver request timesync */
 
 /* Parameters for ZSINIT frame */
 #define ZATTNLEN 32	/* Max length of attention string */

@@ -1,0 +1,22 @@
+New in lrzsz-0.12b:
+
+- lrz: remote command execution is disabled per default. This 
+  fixes a major security hole.
+- lrz now defaults to restricted mode.
+- lrz has a more restricted mode in which creation of directories
+  and invisible files is not allowed. See lrz.1 for more information.
+- rz and sz now recognize x- or y-modem-mode even if named lsb or lsx 
+  (instead of sb or sx).
+- timeout code is enabled again, can be turned of with the -O option.
+- PUBDIR is now optional. configure with --enable-pubdir=/path if you
+  really want a public writeable directory (i don't, so the default
+  is no such directory).
+- turned to GNU autoconf.
+- added timesync protocol extension by Peter Mandrella. See timesync.doc
+  and the man pages for more information.
+- added crash recovery (this is a really simple extension to the 
+  receivers file opening code). Both lrz and lsz no have a -r switch
+  to request resume of a former transfer.
+- many major and minor performance hacks.
+- new: 8K blocksize (a common extension in the DOS world). Turn on
+  with the -8 option to lsz (lrz handles this automatically).

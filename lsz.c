@@ -1,29 +1,75 @@
-#define VERSION "lsz 0.11"
-#define PUBDIR "/usr/spool/uucppublic"
-
-/*  lsz.c cosmetic modifications by Matt Porter
- *  from the Public Domain version of sz.c by Chuck Forsberg,
+/*  lsz.c cosmetic modifications by Matt Porter *  from the Public Domain version of sz.c by Chuck Forsberg,
  *  Omen Technology INC
  *
  *  A program for Linux to send files and commands to computers running
  *  zmodem, ymodem, or xmodem protocols.
  *
  */
+#include "config.h"
 
+#if STDC_HEADERS
+# include <string.h>
+#else
+# ifdef HAVE_STRINGS_H
+#   include <strings.h>
+# endif
+# ifndef HAVE_STRCHR
+#  define strchr index
+#  define strrchr rindex
+# endif
+char *strchr (), *strrchr ();
+# ifndef HAVE_MEMCPY
+#  define memcpy(d, s, n) bcopy ((s), (d), (n))
+#  define memmove(d, s, n) bcopy ((s), (d), (n))
+# endif
+#endif
 
-char *substr(), *getenv();
+#define NEW_ERROR
+
+char *getenv();
 
 #define SS_NORMAL 0
-#define LOGFILE "/var/adm/szlog"
+#define LOGFILE "/var/log/szlog"
 #include <stdio.h>
+#include <stdlib.h>
 #include <signal.h>
 #include <setjmp.h>
 #include <ctype.h>
 #include <errno.h>
+#ifdef HAVE_LIMITS_H
+#  include <limits.h>
+#else 
+#  define PATH_MAX 1024
+#endif
+#if defined(ENABLE_TIMESYNC)
+#  ifdef TM_IN_SYS_TIME
+#    ifdef TIME_WITH_SYS_TIME
+#      include <sys/time.h>
+#      include <time.h>
+#    else
+#      ifdef HAVE_SYS_TIME_H
+#        include <sys/time.h>
+#      else
+#        include <time.h>
+#      endif
+#    endif
+#  else
+#    include <time.h>
+#  endif
+#endif
+
+#if defined(HAVE_SYS_MMAN_H) && defined(HAVE_MMAP)
+#  include <sys/mman.h>
+size_t mm_size;
+void *mm_addr=NULL;
+#else
+#  undef HAVE_MMAP
+#endif
 #include "timing.h"
 extern int errno;
 #define sendline(c) putchar(c & 0377)
 #define xsendline(c) putchar(c)
+
 
 #define PATHLEN 256
 #define OK 0
@@ -57,9 +103,13 @@ unsigned Txwcnt;	/* Counter used to space ack requests */
 long Lrxpos;		/* Receiver's last reported offset */
 int errors;
 
+int Canseek=1; /* 1: can; 0: only rewind, -1: neither */
+
 #include "rbsb.c"	/* most of the system dependent stuff here */
 
 #include "crctab.c"
+
+static int wctx(off_t flen);
 
 int Filesleft;
 long Totalleft,Filesize;
@@ -72,31 +122,14 @@ long Totalleft,Filesize;
 #ifdef READCHECK
 char Myattn[] = { 0 };
 #else
-#ifdef USG
 char Myattn[] = { 03, 0336, 0 };
-#else
-char Myattn[] = { 0 };
-#endif
 #endif
 
 FILE *in;
 
-#ifdef BADSEEK
-int Canseek = 0;	/* 1: Can seek 0: only rewind -1: neither (pipe) */
-#ifndef TXBSIZE
-#define TXBSIZE 16384		/* Must be power of two, < MAXINT */
-#endif
-#else
-int Canseek = 1;	/* 1: Can seek 0: only rewind -1: neither (pipe) */
-#endif
+#define MAX_BLOCK 8192
+char txbuf[MAX_BLOCK];
 
-#ifdef TXBSIZE
-#define TXBMASK (TXBSIZE-1)
-char Txb[TXBSIZE];		/* Circular buffer for file reads */
-char *txbuf = Txb;		/* Pointer to current file segment */
-#else
-char txbuf[1024];
-#endif
 long vpos = 0;			/* Number of bytes read from file */
 
 char Lastrx;
@@ -114,7 +147,6 @@ int errcnt=0;		/* number of files unreadable */
 int blklen=128;		/* length of transmitted records */
 int Optiong;		/* Let it rip no wait for sector ACK's */
 int Eofseen;		/* EOF seen on input set by zfilbuf */
-int BEofseen;		/* EOF seen on input set by fooseek */
 int Totsecs;		/* total number of sectors this file */
 int Filcnt=0;		/* count of number of files opened */
 int Lfseen=0;
@@ -122,6 +154,7 @@ unsigned Rxbuflen = 16384;	/* Receiver's max buffer length */
 int Tframlen = 0;	/* Override for tx frame length */
 int blkopt=0;		/* Override value for zmodem blklen */
 int Rxflags = 0;
+int Rxflags2 = 0;
 long bytcnt;
 int Wantfcs32 = TRUE;	/* want to send 32 bit FCS */
 char Lzconv;	/* Local ZMODEM file conversion request */
@@ -136,17 +169,30 @@ char *Cmdstr;		/* Pointer to the command string */
 int Cmdtries = 11;
 int Cmdack1;		/* Rx ACKs command, then do it */
 int Exitcode;
+int enable_timesync=0;
 int Test;		/* 1= Force receiver to send Attn, etc with qbf. */
 			/* 2= Character transparency test */
 char *qbf="The quick brown fox jumped over the lazy dog's back 1234567890\r\n";
 long Lastsync;		/* Last offset to which we got a ZRPOS */
 int Beenhereb4;		/* How many times we've been ZRPOS'd same place */
 
-jmp_buf tohere;		/* For the interrupt on RX timeout */
+int no_timeout=FALSE;
+int max_blklen=1024;
+int start_blklen=1024;
+#ifdef NEW_ERROR
+int error_count;
+#define OVERHEAD 18
+#define OVER_ERR 20
+#endif
+#define MK_STRING(x) MK_STRING2(x)
+#define MK_STRING2(x) #x
+
+
 jmp_buf intrjmp;	/* For the interrupt on RX CAN */
 
 /* called by signal interrupt or terminate to clean things up */
-bibi(n)
+RETSIGTYPE
+bibi(int n)
 {
 	canit(); fflush(stdout); mode(0);
 	fprintf(stderr, "sz: caught signal %d; exiting\n", n);
@@ -158,6 +204,7 @@ bibi(n)
 	exit(128+n);
 }
 /* Called when ZMODEM gets an interrupt (^X) */
+RETSIGTYPE
 onintr()
 {
 	signal(SIGINT, SIG_IGN);
@@ -168,22 +215,30 @@ int Zctlesc;	/* Encode control characters */
 int Nozmodem = 0;	/* If invoked as "sb" */
 char *Progname = "sz";
 int Zrwindow = 1400;	/* RX window size (controls garbage count) */
+
+#define READLINE_PF(x) readline(x)
 #include "zm.c"
 
 
-main(argc, argv)
-char *argv[];
+int 
+main(int argc, char **argv)
 {
 	register char *cp;
 	register npats;
 	int dm;
+	int under_rsh=FALSE;
 	char **patts;
-	static char xXbuf[BUFSIZ];
 
 	if ((cp = getenv("ZNULLS")) && *cp)
 		Znulls = atoi(cp);
-	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
-		Restricted=TRUE;
+	if ((cp=getenv("SHELL")) && (strstr(cp, "rsh") || strstr(cp, "rksh")
+		|| strstr(cp, "rbash")))
+	{
+		under_rsh=TRUE;
+		Restricted=1;
+	}
+	if ((cp=getenv("ZMODEM_RESTRICTED"))!=NULL)
+		Restricted=1;
 	from_cu();
 	chkinvok(argv[0]);
 
@@ -191,7 +246,6 @@ char *argv[];
 	npats=0;
 	if (argc<2)
 		usage();
-	setbuf(stdout, xXbuf);		
 	while (--argc) {
 		cp = *++argv;
 		if (*cp++ == '-' && *cp) {
@@ -205,6 +259,12 @@ char *argv[];
 				case '2':
 					Twostop = TRUE; break;
 #endif
+				case '8':
+					if (max_blklen==8192)
+						start_blklen=8192;
+					else
+						max_blklen=8192;
+					break;
 				case 'a':
 					Lzconv = ZCNL;
 					Ascii = TRUE; break;
@@ -236,13 +296,13 @@ char *argv[];
 				case 'h':
 					usage(); break;
 				case 'k':
-					blklen=1024; break;
+					start_blklen=1024; break;
 				case 'L':
 					if (--argc < 1) {
 						usage();
 					}
 					blkopt = atoi(*++argv);
-					if (blkopt<24 || blkopt>1024)
+					if (blkopt<24 || blkopt>MAX_BLOCK)
 						usage();
 					break;
 				case 'l':
@@ -250,7 +310,7 @@ char *argv[];
 						usage();
 					}
 					Tframlen = atoi(*++argv);
-					if (Tframlen<32 || Tframlen>1024)
+					if (Tframlen<32 || Tframlen>MAX_BLOCK)
 						usage();
 					break;
 				case 'N':
@@ -259,12 +319,19 @@ char *argv[];
 					Lzmanag = ZMNEW;  break;
 				case 'o':
 					Wantfcs32 = FALSE; break;
+				case 'O':
+					no_timeout = TRUE; break;
 				case 'p':
 					Lzmanag = ZMPROT;  break;
 				case 'r':
-					Lzconv = ZCRESUM;
+					Lzconv = ZCRESUM; break;
+				case 'R':
+					Restricted = TRUE; break;
 				case 'q':
 					Quiet=TRUE; Verbose=0; break;
+				case 'S':
+				    enable_timesync=1;
+				    break;
 				case 't':
 					if (--argc < 1) {
 						usage();
@@ -281,6 +348,14 @@ char *argv[];
 					break;
 				case 'u':
 					++Unlinkafter; break;
+				case 'U':
+					if (!under_rsh)
+						Restricted=0;
+					else {
+fprintf(stderr,"security violation: running under restricted shell\n",stderr);
+						exit(1);
+					}
+					break;
 				case 'v':
 					++Verbose; break;
 				case 'w':
@@ -293,7 +368,7 @@ char *argv[];
 					Txwindow = (Txwindow/64) * 64;
 					Txwspac = Txwindow/4;
 					if (blkopt > Txwspac
-					 || (!blkopt && Txwspac < 1024))
+					 || (!blkopt && Txwspac < MAX_BLOCK))
 						blkopt = Txwspac;
 					break;
 				case 'X':
@@ -319,6 +394,11 @@ char *argv[];
 	}
 	if (npats < 1 && !Command && !Test) 
 		usage();
+	if (Command && Restricted) {
+		printf("Can't send command in restricted mode\n");
+		exit(1);
+	}
+
 	if (Verbose) {
 #if 0
 		if (freopen(LOGFILE, "a", stderr)==NULL) {
@@ -334,9 +414,28 @@ char *argv[];
 	}
 	vfile("%s %s for %s\n", Progname, VERSION, OS);
 
+	{
+		/* we write max_blocklen (data) + 18 (ZModem protocol overhead)
+		 * + escape overhead (about 4 %), so buffer has to be
+		 * somewhat larger than max_blklen 
+		 */
+		char *s=malloc(max_blklen+1024);
+		if (!s)
+		{
+			fprintf(stderr,"lsz: out of memory\n");
+			exit(1);
+		}
+#ifdef SETVBUF_REVERSED
+		setvbuf(stdout,_IOFBF,s,max_blklen+1024);
+#else
+		setvbuf(stdout,s,_IOFBF,max_blklen+1024);
+#endif
+	}
+	blklen=start_blklen;
+
 	mode(1);
 
-#ifndef LINUX
+#ifndef linux
 	if (signal(SIGINT, bibi) == SIG_IGN) {
 		signal(SIGINT, SIG_IGN); signal(SIGKILL, SIG_IGN);
 	} else {
@@ -357,6 +456,16 @@ char *argv[];
 			if (Command)
 				Txhdr[ZF0] = ZCOMMAND;
 			zshhdr(ZRQINIT, Txhdr);
+#if defined(ENABLE_TIMESYNC)
+			if (Rxflags2 != ZF1_TIMESYNC)
+				/* disable timesync if there are any flags we don't know.
+				 * dsz/gsz seems to use some other flags! */
+				enable_timesync=FALSE;
+			if (Rxflags2 & ZF1_TIMESYNC && enable_timesync) {
+				Totalleft+=6; /* TIMESYNC never needs more */
+				Filesleft++;
+			}
+#endif
 		}
 	}
 	fflush(stdout);
@@ -395,6 +504,65 @@ char *argp[];
 		if (wcs(argp[n])==ERROR)
 			return ERROR;
 	}
+#if defined(ENABLE_TIMESYNC)
+	if (Rxflags2 & ZF1_TIMESYNC && enable_timesync)
+	{
+		/* implement Peter Mandrellas extension */
+		/* yes, this *has* a minor race condition */
+		char tmp[PATH_MAX];
+		const char *p;
+		FILE *f;
+		if (Verbose)
+			fprintf(stderr, "\r\nAnswering TIMESYNC");
+		p=getenv("TMPDIR");
+		if (!p)
+			p=getenv("TMP");
+		if (!p)
+			p="/tmp";
+		strcpy(tmp,p);
+		strcat(tmp,"/$time$.t");
+		f=fopen(tmp,"w");
+		if (f)
+		{
+			char buf[30];
+			time_t t=time(NULL);
+			struct tm *tm=localtime(&t); /* sets timezone */
+#ifdef HAVE_STRFTIME
+			strftime(buf,sizeof(buf)-1,"%H:%M:%S",tm);
+			if (Verbose)
+				fprintf(stderr, " at %s",buf);
+#endif
+#if defined(HAVE_TIMEZONE_VAR)
+			fprintf(f,"%ld\r\n",timezone / 60);
+			if (Verbose)
+				fprintf(stderr, " (tz %ld)\r\n",timezone/60);
+#else
+			if (Verbose)
+				fprintf(stderr, " (tz unknown)\r\n");
+#endif
+			fclose(f);
+			if (wcs(tmp)==ERROR)
+				if (Verbose)
+					fprintf(stderr, "\r\nTIMESYNC: failed\n");
+			else
+			{
+				if (Verbose)
+					fprintf(stderr, "\r\nTIMESYNC: ok\n");
+				Filcnt--;
+			}
+			unlink(tmp);
+		}
+		else 
+		{
+			if (!Verbose)
+				fprintf(stderr, "\r\nAnswering TIMESYNC\n");
+			else
+				fprintf(stderr, "\r\n");
+			fprintf(stderr, "  cannot open tmpfile %s: %s\r\n",tmp, 
+				strerror(errno));
+		}
+	}
+#endif
 	Totsecs = 0;
 	if (Filcnt==0) {	/* bitch if we couldn't open ANY files */
 		if ( !Modem2) {
@@ -433,8 +601,12 @@ char *oname;
 
 	if (Restricted) {
 		/* restrict pathnames to current tree or uucppublic */
-		if ( substr(name, "../")
-		 || (name[0]== '/' && strncmp(name, PUBDIR, strlen(PUBDIR))) ) {
+		if ( strstr(name, "../")
+#ifdef PUBDIR
+		 || (name[0]== '/' && strncmp(name, MK_STRING(PUBDIR),
+		 	strlen(MK_STRING(PUBDIR))))
+#endif
+		) {
 			canit();
 			fprintf(stderr,"\r\nlsz:\tSecurity Violation\r\n");
 			return ERROR;
@@ -452,8 +624,23 @@ char *oname;
 		++errcnt;
 		return OK;	/* pass over it, there may be others */
 	}
+	{
+		static char *s=NULL;
+		if (!s) {
+			s=malloc(16384);
+			if (!s) {
+				fprintf(stderr,"lsz: out of memory\n");
+				exit(1);
+			}
+		}
+#ifdef SETVBUF_REVERSED
+		setvbuf(in,_IOFBF,s,16384);
+#else
+		setvbuf(in,s,_IOFBF,16384);
+#endif
+	}
 	timing(1);
-	BEofseen = Eofseen = 0;  vpos = 0;
+	Eofseen = 0;  vpos = 0;
 	/* Check for directory or block special files */
 	fstat(fileno(in), &f);
 	c = f.st_mode & S_IFMT;
@@ -493,7 +680,7 @@ char *name;
 	if (Modem2) {
 		if ((in!=stdin) && *name && fstat(fileno(in), &f)!= -1) {
 			fprintf(stderr, "Sending %s, %ld blocks: ",
-			  name, f.st_size>>7);
+			  name, (long) (f.st_size>>7));
 		}
 		fprintf(stderr, "Give your local XMODEM receive command now.\r\n");
 		return OK;
@@ -523,10 +710,10 @@ char *name;
 			q = txbuf;
 	*q++ = 0;
 	p=q;
-	while (q < (txbuf + 1024))
+	while (q < (txbuf + MAX_BLOCK))
 		*q++ = 0;
 	if (!Ascii && (in!=stdin) && *name && fstat(fileno(in), &f)!= -1)
-		sprintf(p, "%lu %lo %o 0 %d %ld", f.st_size, f.st_mtime,
+		sprintf(p, "%lu %lo %o 0 %d %ld", (long) f.st_size, f.st_mtime,
 		  f.st_mode, Filesleft, Totalleft);
 	fprintf(stderr, "Sending: %s\n",name);
 	Totalleft -= f.st_size;
@@ -586,15 +773,15 @@ getnak()
 }
 
 
-wctx(flen)
-long flen;
+static int 
+wctx(off_t flen)
 {
 	register int thisblklen;
 	register int sectnum, attempts, firstch;
 	long charssent;
 
 	charssent = 0;  firstsec=TRUE;  thisblklen = blklen;
-	vfile("wctx:file length=%ld", flen);
+	vfile("wctx:file length=%ld", (long) flen);
 
 	while ((firstch=readline(Rxtimeout))!=NAK && firstch != WANTCRC
 	  && firstch != WANTG && firstch!=TIMEOUT && firstch!=CAN)
@@ -752,89 +939,11 @@ zfilbuf()
 {
 	int n;
 
-#ifdef TXBSIZE
-	/* We assume request is within buffer, or just beyond */
-	txbuf = Txb + (bytcnt & TXBMASK);
-	if (vpos <= bytcnt) {
-		n = fread(txbuf, 1, blklen, in);
-		vpos += n;
-		if (n < blklen)
-			Eofseen = 1;
-		return n;
-	}
-	if (vpos >= (bytcnt+blklen))
-		return blklen;
-	/* May be a short block if crash recovery etc. */
-	Eofseen = BEofseen;
-	return (vpos - bytcnt);
-#else
 	n = fread(txbuf, 1, blklen, in);
 	if (n < blklen)
 		Eofseen = 1;
 	return n;
-#endif
 }
-
-#ifdef TXBSIZE
-fooseek(fptr, pos, whence)
-FILE *fptr;
-long pos;
-{
-	int m, n;
-
-	vfile("fooseek: pos =%lu vpos=%lu Canseek=%d", pos, vpos, Canseek);
-	/* Seek offset < current buffer */
-	if (pos < (vpos -TXBSIZE +1024)) {
-		BEofseen = 0;
-		if (Canseek > 0) {
-			vpos = pos & ~TXBMASK;
-			if (vpos >= pos)
-				vpos -= TXBSIZE;
-			if (fseek(fptr, vpos, 0))
-				return 1;
-		}
-		else if (Canseek == 0)
-			if (fseek(fptr, vpos = 0L, 0))
-				return 1;
-		else
-			return 1;
-		while (vpos <= pos) {
-			n = fread(Txb, 1, TXBSIZE, fptr);
-			vpos += n;
-			vfile("n=%d vpos=%ld", n, vpos);
-			if (n < TXBSIZE) {
-				BEofseen = 1;
-				break;
-			}
-		}
-		vfile("vpos=%ld", vpos);
-		return 0;
-	}
-	/* Seek offset > current buffer (crash recovery, etc.) */
-	if (pos > vpos) {
-		if (Canseek)
-			if (fseek(fptr, vpos = (pos & ~TXBMASK), 0))
-				return 1;
-		while (vpos <= pos) {
-			txbuf = Txb + (vpos & TXBMASK);
-			m = TXBSIZE - (vpos & TXBMASK);
-			n = fread(txbuf, 1, m, fptr);
-			vpos += n;
-			vfile("bo=%d n=%d vpos=%ld", txbuf-Txb, n, vpos);
-			if (m < n) {
-				BEofseen = 1;
-				break;
-			}
-		}
-		return 0;
-	}
-	/* Seek offset is within current buffer */
-	vfile("vpos=%ld", vpos);
-	return 0;
-}
-#define fseek fooseek
-#endif
-
 
 /* VARARGS1 */
 vfile(f, a, b, c)
@@ -847,9 +956,11 @@ register char *f;
 }
 
 
-alrm()
+RETSIGTYPE
+alrm(int dummy)
 {
-	longjmp(tohere, -1);
+	/* this doesn't need to do anything - it interrupts read(), and
+	 * that's enough. */
 }
 
 
@@ -860,29 +971,48 @@ alrm()
 readline(timeout)
 {
 	register int c;
-	static char byt[1];
+	static char buf[64];
+	static char *bufptr=buf;
+	static int bufleft=0;
+
+	if (timeout==-1)
+	{
+		bufleft=0;
+		return 0;
+	}
+
+	if (bufleft)
+	{
+		c=*bufptr & 0377;
+		bufptr++;
+		bufleft--;
+		if (Verbose>5)
+			fprintf(stderr, "ret %x\n", c);
+		return c;
+	}
 
 	fflush(stdout);
-	if (setjmp(tohere)) {
-		zperr("TIMEOUT");
-		return TIMEOUT;
-	}
-	c = timeout/10;
-	if (c<2)
-		c=2;
-	if (Verbose>5) {
-		fprintf(stderr, "Timeout=%d Calling alarm(%d) ", timeout, c);
-	}
-#ifndef LINUX
-	signal(SIGALRM, alrm); alarm(c);
-#endif
-	c=read(iofd, byt, 1);
-	alarm(0);
+	if (!no_timeout) {
+		c = timeout/10;
+		if (c<2)
+			c=2;
+		if (Verbose>5) {
+			fprintf(stderr, "Timeout=%d Calling alarm(%d) ", timeout, c);
+		}
+		signal(SIGALRM, alrm); alarm(c);
+	} else if (Verbose>5) 
+		fprintf(stderr, "Calling read ");
+	bufleft=read(iofd, buf, sizeof(buf));
+	if (!no_timeout)
+		alarm(0);
 	if (Verbose>5)
-		fprintf(stderr, "ret %x\n", byt[0]);
-	if (c<1)
+		fprintf(stderr, "ret %x\n", buf[0]);
+	if (bufleft<1)
 		return TIMEOUT;
-	return (byt[0]&0377);
+	bufptr=buf+1;
+	bufleft--;
+
+	return (buf[0]&0377);
 }
 
 flushmo()
@@ -893,7 +1023,8 @@ flushmo()
 
 purgeline()
 {
-#ifdef USG
+	readline(-1);
+#ifdef TCFLSH
 	ioctl(iofd, TCFLSH, 0);
 #else
 	lseek(iofd, 0L, 2);
@@ -926,27 +1057,6 @@ char *s, *p, *u;
 	fprintf(stderr, "\n");
 }
 
-/*
- * substr(string, token) searches for token in string s
- * returns pointer to token within string if found, NULL otherwise
- */
-char *
-substr(s, t)
-register char *s,*t;
-{
-	register char *ss,*tt;
-	/* search for first char of token */
-	for (ss=s; *s; s++)
-		if (*s == *t)
-			/* compare token with substring */
-			for (ss=s,tt=t; ;) {
-				if (*tt == 0)
-					return s;
-				if (*ss++ != *tt++)
-					break;
-			}
-	return NULL;
-}
 
 char *babble[] = {
 	"Send file(s) with ZMODEM/YMODEM/XMODEM Protocol",
@@ -992,7 +1102,8 @@ usage()
 
 	for (pp=babble; **pp; ++pp)
 		fprintf(stderr, "%s\n", *pp);
-	fprintf(stderr, "\t%s for Debian GNU/Linux\n", VERSION);
+	fprintf(stderr, "\t%s version %s for %s %s\n", Progname, VERSION,
+		CPU, OS);
 	cucheck();
 	exit(SS_NORMAL);
 }
@@ -1018,6 +1129,7 @@ getzrxinit()
 			continue;
 		case ZRINIT:
 			Rxflags = 0377 & Rxhdr[ZF0];
+			Rxflags2 = 0377 & Rxhdr[ZF1];
 			Txfcs32 = (Wantfcs32 && (Rxflags & CANFC32));
 			Zctlesc |= Rxflags & TESCCTL;
 			Rxbuflen = (0377 & Rxhdr[ZP0])+((0377 & Rxhdr[ZP1])<<8);
@@ -1030,31 +1142,24 @@ getzrxinit()
 			mode(2);	/* Set cbreak, XON/XOFF, etc. */
 #endif
 #ifndef READCHECK
-#ifndef USG
-			/* Use 1024 byte frames if no sample/interrupt */
-			if (Rxbuflen < 32 || Rxbuflen > 1024) {
-				Rxbuflen = 1024;
+			/* Use MAX_BLOCK byte frames if no sample/interrupt */
+			if (Rxbuflen < 32 || Rxbuflen > MAX_BLOCK) {
+				Rxbuflen = MAX_BLOCK;
 				vfile("Rxbuflen=%d", Rxbuflen);
 			}
-#endif
 #endif
 			/* Override to force shorter frame length */
 			if (Rxbuflen && (Rxbuflen>Tframlen) && (Tframlen>=32))
 				Rxbuflen = Tframlen;
-			if ( !Rxbuflen && (Tframlen>=32) && (Tframlen<=1024))
+			if ( !Rxbuflen && (Tframlen>=32) && (Tframlen<=MAX_BLOCK))
 				Rxbuflen = Tframlen;
 			vfile("Rxbuflen=%d", Rxbuflen);
 
 			/* If using a pipe for testing set lower buf len */
 			fstat(iofd, &f);
 			if ((f.st_mode & S_IFMT) != S_IFCHR) {
-				Rxbuflen = 1024;
+				Rxbuflen = MAX_BLOCK;
 			}
-#ifdef BADSEEK
-			Canseek = 0;
-			Txwindow = TXBSIZE - 1024;
-			Txwspac = TXBSIZE/4;
-#endif
 			/*
 			 * If input is not a regular file, force ACK's to
 			 *  prevent running beyond the buffer limits
@@ -1063,12 +1168,7 @@ getzrxinit()
 				fstat(fileno(in), &f);
 				if ((f.st_mode & S_IFMT) != S_IFREG) {
 					Canseek = -1;
-#ifdef TXBSIZE
-					Txwindow = TXBSIZE - 1024;
-					Txwspac = TXBSIZE/4;
-#else
 					return ERROR;
-#endif
 				}
 			}
 			/* Set initial subpacket length */
@@ -1137,7 +1237,7 @@ zsendfile(buf, blen)
 char *buf;
 {
 	register c;
-	register UNSL long crc;
+	register unsigned long crc;
 
 	for (;;) {
 		Txhdr[ZF0] = Lzconv;	/* file conversion request */
@@ -1166,6 +1266,16 @@ again:
 			return ERROR;
 		case ZCRC:
 			crc = 0xFFFFFFFFL;
+#ifdef HAVE_MMAP
+			if (mm_addr) {
+				size_t i;
+				char *p=mm_addr;
+				for (i=0;i<Rxpos && i<mm_size;i++,p++) {
+					crc = UPDC32(*p, crc);
+				}
+				crc = ~crc;
+			} else
+#endif
 			if (Canseek >= 0) {
 				while (((c = getc(in)) != EOF) && --Rxpos)
 					crc = UPDC32(c, crc);
@@ -1177,15 +1287,21 @@ again:
 			zsbhdr(ZCRC, Txhdr);
 			goto again;
 		case ZSKIP:
-			fclose(in); return c;
+			if (in)
+				fclose(in);
+			return c;
 		case ZRPOS:
 			/*
 			 * Suppress zcrcw request otherwise triggered by
 			 * lastyunc==bytcnt
 			 */
+#ifdef HAVE_MMAP
+			if (!mm_addr)
+#endif
 			if (Rxpos && fseek(in, Rxpos, 0))
 				return ERROR;
-			Lastsync = (bytcnt = Txpos = Rxpos) -1;
+			bytcnt = Txpos = Rxpos;
+			Lastsync = Rxpos -1;
 			return zsendfdata();
 		}
 	}
@@ -1199,11 +1315,32 @@ zsendfdata()
 	register long tcount = 0;
 	int junkcount;		/* Counts garbage chars received by TX */
 	static int tleft = 6;	/* Counter for test mode */
-	int savebps;
+	long last_txpos=0;
+	long last_bps=0;
+	long not_printed=0;
+	static long total_sent=0;
+
+#ifdef HAVE_MMAP
+	{
+		struct stat st;
+		if (fstat(fileno(in),&st)==0)
+		{
+			mm_size=st.st_size;
+	    		mm_addr = mmap (0, mm_size, PROT_READ, 
+	    			MAP_SHARED, fileno(in), 0);
+	    		if ((caddr_t) mm_addr==(caddr_t) -1)
+	    			mm_addr=NULL;
+	    		else {
+	    			fclose(in);
+	    			in=NULL;
+	    		}
+		}
+	}
+#endif
 
 	Lrxpos = 0;
 	junkcount = 0;
-	Beenhereb4 = FALSE;
+	Beenhereb4 = 0;
 somemore:
 	if (setjmp(intrjmp)) {
 waitack:
@@ -1213,10 +1350,12 @@ gotack:
 		switch (c) {
 		default:
 		case ZCAN:
-			fclose(in);
+			if (in)
+				fclose(in);
 			return ERROR;
 		case ZSKIP:
-			fclose(in);
+			if (in)
+				fclose(in);
 			return c;
 		case ZACK:
 		case ZRPOS:
@@ -1232,7 +1371,7 @@ gotack:
 		 *  rdchk(fdes) returns non 0 if a character is available
 		 */
 		while (rdchk(iofd)) {
-#ifdef SV
+#ifdef READCHECK_READS
 			switch (checked)
 #else
 			switch (readline(1))
@@ -1243,7 +1382,7 @@ gotack:
 				c = getinsync(1);
 				goto gotack;
 			case XOFF:		/* Wait a while for an XON */
-#ifndef LINUX
+#ifndef linux
 			case XOFF|0200:
 #endif
 				readline(100);
@@ -1252,7 +1391,7 @@ gotack:
 #endif
 	}
 
-#ifndef LINUX
+#ifndef linux
 	if ( !Fromcu)
 		signal(SIGINT, onintr);
 #endif
@@ -1274,7 +1413,7 @@ gotack:
 				tcount += strlen(qbf);
 #ifdef READCHECK
 				while (rdchk(iofd)) {
-#ifdef SV
+#ifdef READCHECK_READS
 					switch (checked)
 #else
 					switch (readline(1))
@@ -1287,7 +1426,7 @@ gotack:
 #endif
 						goto waitack;
 					case XOFF:	/* Wait for XON */
-#ifndef LINUX
+#ifndef linux
 					case XOFF|0200:
 #endif
 						readline(100);
@@ -1306,6 +1445,23 @@ gotack:
 	}
 
 	do {
+#ifdef NEW_ERROR
+		int old=blklen;
+		blklen=calc_blklen(total_sent);
+		total_sent+=blklen+OVERHEAD;
+		if (Verbose >2 && blklen!=old)
+			fprintf(stderr,"blklen now %ld\n",blklen);
+#endif
+#ifdef HAVE_MMAP
+		if (mm_addr) {
+			if (Txpos+blklen<mm_size) 
+				n=blklen;
+			else {
+				n=mm_size-Txpos;
+				Eofseen=1;
+			}
+		} else 
+#endif
 		n = zfilbuf();
 		if (Eofseen)
 			e = ZCRCE;
@@ -1320,18 +1476,25 @@ gotack:
 		}
 		else
 			e = ZCRCG;
-		if (Verbose>1) {
-			long bps=(Txpos/timing(0));
+		if (Verbose>1
+			&& (not_printed > 5 || Txpos > last_bps / 2 + last_txpos)) {
 			int minleft =  0;
 			int secleft =  0;
-			if (bps > 0) {
-				minleft =  (Filesize-Txpos)/bps/60;
-				secleft =  ((Filesize-Txpos)/bps)%60;
+			last_bps=(Txpos/timing(0));
+			if (last_bps > 0) {
+				minleft =  (Filesize-Txpos)/last_bps/60;
+				secleft =  ((Filesize-Txpos)/last_bps)%60;
 			}
-			savebps = bps;
 			fprintf(stderr, "\rBytes Sent:%7ld/%7ld   BPS:%-6d ETA %02d:%02d  ",
-			 Txpos, Filesize, bps, minleft, secleft);
-		}
+			 Txpos, Filesize, last_bps, minleft, secleft);
+			last_txpos=Txpos;
+		} else if (Verbose)
+			not_printed++;
+#ifdef HAVE_MMAP
+		if (mm_addr)
+			zsdata(mm_addr+Txpos,n,e);
+		else
+#endif
 		zsdata(txbuf, n, e);
 		bytcnt = Txpos += n;
 		if (e == ZCRCW)
@@ -1345,7 +1508,7 @@ gotack:
 		 */
 		fflush(stdout);
 		while (rdchk(iofd)) {
-#ifdef SV
+#ifdef READCHECK_READS
 			switch (checked)
 #else
 			switch (readline(1))
@@ -1363,7 +1526,7 @@ gotack:
 				zsdata(txbuf, 0, ZCRCE);
 				goto gotack;
 			case XOFF:		/* Wait a while for an XON */
-#ifndef LINUX
+#ifndef linux
 			case XOFF|0200:
 #endif
 				readline(100);
@@ -1389,8 +1552,9 @@ gotack:
 			vfile("window = %ld", tcount);
 		}
 	} while (!Eofseen);
-	fprintf(stderr, "\rBytes Sent:%7ld   BPS:%-6d                       \n",
-		Filesize,savebps);
+	if (Verbose > 1)
+		fprintf(stderr, "\rBytes Sent:%7ld   BPS:%-6d                       \n",
+		Filesize,last_bps);
 	if ( !Fromcu)
 		signal(SIGINT, SIG_IGN);
 
@@ -1405,14 +1569,133 @@ gotack:
 		case ZRINIT:
 			return OK;
 		case ZSKIP:
-			fclose(in);
+			if (in)
+				fclose(in);
 			return c;
 		default:
-			fclose(in);
+			if (in)
+				fclose(in);
 			return ERROR;
 		}
 	}
 }
+
+#ifdef NEW_ERROR
+int
+calc_blklen(long total_sent)
+{
+	static long total_bytes=0;
+	static int calcs_done=0;
+	static long last_error_count=0;
+	static int last_blklen=0;
+	static long last_bytes_per_error=0;
+	long best_bytes=0;
+	long best_size=0;
+	long bytes_per_error;
+	long d;
+	int i;
+	if (total_bytes==0)
+	{
+		/* called from countem */
+		total_bytes=total_sent;
+		return 0;
+	}
+
+	/* it's not good to calc blklen too early */
+	if (calcs_done++ < 5) {
+		if (error_count && start_blklen >1024)
+			return last_blklen=1024;
+		else 
+			last_blklen/=2;
+		return last_blklen=start_blklen;
+	}
+
+	if (!error_count) {
+		/* that's fine */
+		if (start_blklen==max_blklen)
+			return start_blklen;
+		bytes_per_error=LONG_MAX;
+		goto calcit;
+	}
+
+	if (error_count!=last_error_count) {
+		/* the last block was bad. shorten blocks until one block is
+		 * ok. this is because very often many errors come in an
+		 * short period */
+		if (error_count & 2)
+		{
+			last_blklen/=2;
+			if (last_blklen < 32)
+				last_blklen = 32;
+			else if (last_blklen > 512)
+				last_blklen=512;
+			if (Verbose > 3)
+				fprintf(stderr,"calc_blklen: reduced to %d due to error\n",
+					last_blklen);
+			last_error_count=error_count;
+			last_bytes_per_error=0; /* force recalc */
+		}
+		return last_blklen;
+	}
+
+	bytes_per_error=total_sent / error_count;
+		/* we do not get told about every error! 
+		 * from my experience the value is ok */
+	bytes_per_error/=2;
+	/* there has to be a margin */
+	if (bytes_per_error<100)
+		bytes_per_error=100;
+
+	/* be nice to the poor machine and do the complicated things not
+	 * too often
+	 */
+	if (last_bytes_per_error>bytes_per_error)
+		d=last_bytes_per_error-bytes_per_error;
+	else
+		d=bytes_per_error-last_bytes_per_error;
+	if (d<4)
+	{
+		if (Verbose > 3)
+		{
+			fprintf(stderr,"calc_blklen: returned old value %d due to low bpe diff\n",
+				last_blklen);
+			fprintf(stderr,"calc_blklen: old %ld, new %ld, d %ld\n",
+				last_bytes_per_error,bytes_per_error,d );
+		}
+		return last_blklen;
+	}
+	last_bytes_per_error=bytes_per_error;
+
+calcit:
+	if (Verbose > 3)
+		fprintf(stderr,"calc_blklen: calc total_bytes=%ld, bpe=%ld\n",
+			total_bytes,bytes_per_error);
+	for (i=32;i<=max_blklen;i*=2) {
+		long ok; /* some many ok blocks do we need */
+		long failed; /* and that's the number of blocks not transmitted ok */
+		long transmitted;
+		ok=total_bytes / i + 1;
+		failed=((long) i + OVERHEAD) * ok / bytes_per_error;
+		transmitted=ok * ((long) i+OVERHEAD)  
+			+ failed * ((long) i+OVERHEAD+OVER_ERR);
+		if (Verbose > 4)
+			fprintf(stderr,"calc_blklen: blklen %d, ok %ld, failed %ld -> %ld\n",
+				i,ok,failed,transmitted);
+		if (transmitted < best_bytes || !best_bytes)
+		{
+			best_bytes=transmitted;
+			best_size=i;
+		}
+	}
+	if (best_size > 2*last_blklen)
+		best_size=2*last_blklen;
+	last_blklen=best_size;
+	if (Verbose > 3)
+		fprintf(stderr,"calc_blklen: returned %d as best\n",
+			last_blklen);
+	return last_blklen;
+}
+#endif
 
 /*
  * Respond to receiver's complaint, get back in sync with receiver
@@ -1439,16 +1722,29 @@ getinsync(flag)
 			/*   might send a break at this point to */
 			/*   dump the modem's buffer.		 */
 			clearerr(in);	/* In case file EOF seen */
+#ifdef HAVE_MMAP
+			if (!mm_addr)
+#endif
 			if (fseek(in, Rxpos, 0))
 				return ERROR;
 			Eofseen = 0;
 			bytcnt = Lrxpos = Txpos = Rxpos;
 			if (Lastsync == Rxpos) {
+#ifndef NEW_ERROR
 				if (++Beenhereb4 > 4)
 					if (blklen > 32)
+					{
 						blklen /= 2;
+						if (Verbose > 1) {
+							fprintf(stderr,"\rFalldown to %ld blklen\r\n",
+								blklen);
+						}
+					}
+#else
+				error_count++;
+#endif
 			}
-			Lastsync = Rxpos;
+			Lastsync = Rxpos-1;
 			return c;
 		case ZACK:
 			Lrxpos = Rxpos;
@@ -1457,10 +1753,14 @@ getinsync(flag)
 			continue;
 		case ZRINIT:
 		case ZSKIP:
-			fclose(in);
+			if (in)
+				fclose(in);
 			return c;
 		case ERROR:
 		default:
+#ifdef NEW_ERROR
+				error_count++;
+#endif
 			zsbhdr(ZNAK, Txhdr);
 			continue;
 		}
@@ -1558,10 +1858,12 @@ char *s;
 		Verbose=1; ++s;
 	}
 	Progname = s;
-	if (s[0]=='s' && s[1]=='b') {
+	if ((s[0]=='s' && s[1]=='b')
+		|| (s[0]=='l' && s[1]=='s' && s[2]=='b')) {
 		Nozmodem = TRUE; blklen=1024;
 	}
-	if (s[0]=='s' && s[1]=='x') {
+	if ((s[0]=='s' && s[1]=='x')
+		|| (s[0]=='l' && s[1]=='s' && s[2]=='x')) {
 		Modem2 = TRUE;
 	}
 }
@@ -1585,11 +1887,14 @@ register char **argv;
 			}
 		}
 		if (Verbose>2)
-			fprintf(stderr, " %ld", f.st_size);
+			fprintf(stderr, " %ld", (long) f.st_size);
 	}
 	if (Verbose>2)
 		fprintf(stderr, "\ncountem: Total %d %ld\n",
 		  Filesleft, Totalleft);
+#ifdef NEW_ERROR
+	calc_blklen(Totalleft);
+#endif
 }
 
 chartest(m)
