@@ -21,3 +21,5 @@ Calling conventions:
       For more information read the SECURITY paragraph in lrz.1.
     - lrz: remote command execution is disabled. To enable it use -C (but
       be careful - the sender might delete all your files).
+    - lrz: does not set executable bits for any files it received under
+      a restricted shell.

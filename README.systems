@@ -1,0 +1,29 @@
+A list of systems lrzsz has been compiled under and has
+passed a simple self test:
+
+version    os      version arch    chip    cc      ccversion    who (if not me)
+0.12.20    beos    4.0     i386    pentium gcc     2.9-beos-980929
+0.12.20    bsd.os  2.1     i386    unknown gcc     2.7.2
+0.12.20    bsd.os  3.1     i386    unknown gcc     2.7.2.1
+0.12.20    hpux    9.00    unknown m68k    cc      unknown
+0.12.20    hpux    9.00    unknown m68k    gcc     2.8.0
+0.12.20    linux   2.0.33  i386    pentium gcc     2.7.2.1
+0.12.20    linux   2.0.35  i386    pentium gcc     2.7.2.3      zerox=???
+0.12.20    linux   2.0.36  i386    pentium gcc     2.7.2.1
+0.12.20    linux   2.0.36  i386    pentium gcc     2.7.2.3
+0.12.20    linux   2.0.36  i386    ppro    gcc     2.7.2.3      lg
+0.12.20    linux   2.1.131 i386    pentium gcc     2.7.2.3
+0.12.20    linux   2.2.11  i386    pentium gcc     egcs-2.91.66
+0.12.20    linux   2.2.5   i386    ppro    gcc     egcs-2.91.66
+0.12.20    linux   2.2.9   i386    pentium gcc     egcs-2.91.66
+0.12.20    osf     4.0     unknown alpha   gcc     2.8.1        ke
+0.12.20    sco     3.2v4.2 unknown pentium gcc     2.5.7
+0.12.20    sunos   5.5.1   sparc   sun4u   gcc     2.7.2.1
+0.12.20    sunos   5.6     sparc   sun4u   gcc     2.8.1
+0.12.21rc  linux   2.2.11  i386    pentium gcc     egcs-2.91.66
+0.12.21rc  sunos   5.6     sparc   sun4u   gcc     egcs-2.91.66
+
+you can contribute to this list: "make success"
+
+See http://tirka.ohse.de/cgi-bin/swfeedback?package=lrzsz
+for a more up to date list.
