@@ -1,58 +1,58 @@
 #!/usr/bin/make -f
+# Derived from debhelper/dh_make example.
 
-package=lrzsz
+#export DH_VERBOSE=1
 
-tmpdir = $(shell pwd)/debian/tmp
-instdirs = $(tmpdir) \
-	$(tmpdir)/DEBIAN \
-	$(tmpdir)/usr/bin \
-	$(tmpdir)/usr/doc/lrzsz \
-	$(tmpdir)/usr/man/man1
-
-build:
-	$(checkdir)
-	CFLAGS=-O2 LDFLAGS= ./configure --program-transform-name=s/l//
+build: build-stamp
+build-stamp:
+	dh_testdir
+	./configure --prefix=/usr --mandir=/usr/share/man \
+                    --program-transform-name=s/l//
 	$(MAKE) 
-	touch build
+	touch build-stamp
 
 clean:
-	$(checkdir)
-	-rm -f build
-	-$(MAKE) distclean
-	-rm -rf *~ debian/tmp debian/*~ debian/files*
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp install-stamp
+	[ ! -f Makefile ] || $(MAKE) distclean
+	dh_clean
 
-binary-indep:  checkroot build
-	$(checkdir)
+install: install-stamp
+install-stamp: build-stamp
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+	$(MAKE) install prefix=`pwd`/debian/tmp/usr \
+                        mandir=`pwd`/debian/tmp/usr/share/man
+	touch install-stamp
 
-binary-arch:	checkroot build $(instdirs)
-	dpkg-shlibdeps lsz
-	dpkg-gencontrol >debian/tmp/DEBIAN/control
-	$(MAKE) INSTALL_PROGRAM='install -c -s' prefix=$(tmpdir)/usr install
-	install -m 644 debian/copyright $(tmpdir)/usr/doc/$(package)/copyright
-	chown -R root.root $(tmpdir)
-	chmod -R g-ws $(tmpdir)
-	dpkg --build $(tmpdir) ..
+binary-indep: build install
+# We have nothing to do, no architecture independent packages here.
 
-define checkdir
-	test -f debian/rules
-endef
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+	dh_installdocs NEWS README README.cvs README.isdn4linux TODO
+#	dh_installmanpages ansi2knr.1
+	dh_installchangelogs ChangeLog
+	dh_strip
+	dh_compress
+	cd debian/tmp/usr/share/man/man1 ; \
+           ln -s rz.1.gz rb.1.gz ; \
+           ln -s rz.1.gz rx.1.gz ; \
+           ln -s sz.1.gz sb.1.gz ; \
+           ln -s sz.1.gz sx.1.gz
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
 
-# Below here is fairly generic really
-
-binary:		binary-indep binary-arch
-
-source diff:
+source diff:                                                                  
 	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
 
-checkroot:
-	$(checkdir)
-	test root = "`whoami`"
-
-.PHONY: binary diff clean checkroot zapdirs
-
-zapdirs:
-	-rm -rf $(tmpdir)
-
-$(instdirs): zapdirs
-	install -d -m 755 $@
-	chmod g-s $@
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary

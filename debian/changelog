@@ -1,3 +1,64 @@
+lrzsz (0.12.21-3) unstable; urgency=low
+
+  * Newish upstream version, (990823 in CVS).
+  * Updated for Policy 3.x.
+  * Misc. fixes for debian/*.
+
+ -- Josip Rodin <jrodin@jagor.srce.hr>  Sun, 19 Sep 1999 17:55:38 +0200
+
+lrzsz (0.12.21-2) unstable; urgency=low
+
+  * Removed definition of strstr, advised by upstream maintainer, to
+    get it to compile on glibc2.1, as John Goerzen and Bart Warmerdam
+    noticed (fixes: #39429 #39812).
+
+ -- Josip Rodin <jrodin@jagor.srce.hr>  Sun, 20 Jun 1999 21:38:07 +0200
+
+lrzsz (0.12.21-1) unstable; urgency=low
+
+  * New upstream version (990604 in CVS).
+  * Cleaned up the diff by removing unneeded .deps/ files and not changing
+    aclocal et al.
+
+ -- Josip Rodin <jrodin@jagor.srce.hr>  Sun,  6 Jun 1999 21:01:50 +0200
+
+lrzsz (0.12.20-2) unstable; urgency=low
+
+  * Don't install ansi2knr.1 manpage, closing bug #33121
+
+ -- Josip Rodin <jrodin@jagor.srce.hr>  Sun,  7 Feb 1999 01:32:31 +0100
+
+lrzsz (0.12.20-1) unstable; urgency=low
+
+  * New maintainer.
+  * Althought version number doesn't indicate that, this version is
+    today's CVS snapshot from ftp://tirka.ohse.de/uwe/cvs-trees
+  * This release fixes following bugs: #8373 #11208 #16170 #16744 #17210.
+  * Package is lintian clean.
+
+ -- Josip Rodin <jrodin@jagor.srce.hr>  Sun,  7 Feb 1999 01:32:31 +0100
+
+lrzsz (0.12.17) unstable; urgency=low
+
+  * sorry, see ../ChangeLog. automagically generated debian/changelog
+
+ -- Uwe Ohse <uwe@ohse.de>  Mon, 02 Jun 1997 10:06:05 +0200
+
+lrzsz (0.12.16) unstable; urgency=low
+
+  * sorry, see ../ChangeLog. changelog is here just to make
+    dpkg happy.
+  * initial release
+
+ -- Uwe Ohse <uwe@ohse.de>  Sun, 2 Jun 1997 21:00:00 +0200
+
+lrzsz (0.12b-1.1) unstable; urgency=low
+
+  * Non-maintainer release.
+  * Libc6 compile.
+
+ -- Martin Mitchell <martin@debian.org>  Sat, 18 Oct 1997 01:58:54 +1000
+
 lrzsz (0.12b-1) unstable; urgency=low
 
   * Converted to new source packaging format.
@@ -7,4 +68,5 @@ lrzsz (0.12b-1) unstable; urgency=low
 
 Local variables:
 mode: debian-changelog
+add-log-mailing-address: "jrodin@jagor.srce.hr"
 End:

@@ -1,0 +1,21 @@
+/Makefile.am/1.3/Mon Dec 28 08:41:34 1998/-ko/
+/Makefile.in/1.6/Thu Jun  3 15:43:15 1999/-ko/
+/ansi2knr.1/1.2/Sun Dec 27 14:29:31 1998/-ko/
+/ansi2knr.c/1.5/Sun Dec 27 16:09:19 1998/-ko/
+/canit.c/1.1/Mon Dec 28 08:41:34 1998/-ko/
+/crctab.c/1.1.1.1/Sun Apr 26 13:20:52 1998/-ko/
+/lrz.c/1.10/Sun Aug 22 18:51:21 1999/-ko/
+/lrzszbug.in/1.1.1.1/Sun Apr 26 13:22:38 1998/-ko/
+/lsyslog.c/1.3/Tue Dec 29 17:27:55 1998/-ko/
+/lsz.c/1.15/Sun Aug 22 18:51:21 1999/-ko/
+/protname.c/1.1.1.2/Sun Apr 26 13:22:27 1998/-ko/
+/rbsb.c/1.9/Sun Aug 22 18:51:21 1999/-ko/
+/tcp.c/1.6/Sun Aug 22 18:51:21 1999/-ko/
+/timing.c/1.1.1.6/Sun Apr 26 13:22:26 1998/-ko/
+/timing.h/1.1.1.3/Sun Apr 26 13:22:09 1998/-ko/
+/zglobal.h/1.7/Tue Dec 29 12:58:37 1998/-ko/
+/zm.c/1.3/Thu Jun  3 15:43:16 1999/-ko/
+/zmodem.h/1.1.1.4/Sun Apr 26 13:22:40 1998/-ko/
+/zperr.c/1.3/Sun Dec 27 16:09:19 1998/-ko/
+/zreadline.c/1.3/Sun Aug 22 18:51:21 1999/-ko/
+D
