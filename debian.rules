@@ -1,0 +1,60 @@
+#!/usr/bin/make -f
+#
+# debian.rules file for lrzsz 0.11
+
+build:		checkdir
+	$(MAKE) linux
+
+install:	checkroot build    
+	sh ./debian.preinst
+	install -m755 lrz /usr/bin
+	install -m755 lsz /usr/bin
+	( cd /usr/bin ; ln -fs lrz lrb )
+	( cd /usr/bin ; ln -fs lrz lrx )
+	( cd /usr/bin ; ln -fs lsz lsb )
+	( cd /usr/bin ; ln -fs lsz lsx )
+	install -m644 lrz.1 /usr/man/man1
+	install -m644 lsz.1 /usr/man/man1
+	install -m644 debian.README /usr/doc/copyright/lrzsz
+
+clean:		checkdir
+	-$(MAKE) -i clean
+	-rm -rf debian-tmp *~
+
+binary:		checkroot build
+	-rm -rf debian-tmp
+	mkdir debian-tmp debian-tmp/DEBIAN
+	install -d debian-tmp/usr/doc/copyright
+	cp debian.control debian-tmp/DEBIAN/control
+	cp debian.preinst debian-tmp/DEBIAN/preinst
+	chmod +x debian-tmp/DEBIAN/preinst
+	mkdir debian-tmp/usr/bin
+	install -m755 lrz debian-tmp/usr/bin 
+	install -m755 lsz debian-tmp/usr/bin    
+	( cd debian-tmp/usr/bin ; ln -fs lrz lrb ) 
+	( cd debian-tmp/usr/bin ; ln -fs lrz lrx ) 
+	( cd debian-tmp/usr/bin ; ln -fs lsz lsb ) 
+	( cd debian-tmp/usr/bin ; ln -fs lsz lsx ) 
+	mkdir debian-tmp/usr/man debian-tmp/usr/man/man1
+	install -m644 lrz.1 debian-tmp/usr/man/man1
+	install -m644 lsz.1 debian-tmp/usr/man/man1
+	cp debian.README debian-tmp/usr/doc/copyright/lrzsz
+	dpkg --build debian-tmp
+	mv debian-tmp.deb ../lrzsz.deb
+
+source:		checkdir clean
+	chmod +x debian.rules
+	cd .. && \
+	tar cf lrzsz-0.11.tar lrzsz && \
+	gzip -9vf lrzsz-0.11.tar
+
+diff:		checkdir clean
+	cd .. && \
+	(diff -ruN lrzsz-orig lrzsz >lrzsz-0.11.debian.diff; [ $$? = 1 ]) && \
+	gzip -9vf lrzsz-0.11.debian.diff
+
+checkdir:
+	test -f lrz.c
+
+checkroot:	checkdir
+	test root = "`whoami`"

@@ -1,0 +1,8 @@
+PACKAGE: lrzsz
+VERSION: 0.11
+MAINTAINER: Matt Porter <porter+@osu.edu>
+DESCRIPTION: Linux version of the rzsz zmodem/ymodem/xmodem transfer package
+DEPENDS:
+RECOMMENDED:
+OPTIONAL:
+CONFLICTS:

@@ -1,0 +1,11 @@
+lrzsz 0.11 is subject to the terms of the GNU General Public License and
+Copyrighted by Matt Porter <porter+@osu.edu>
+
+You should find a copy of the GNU GPL in /usr/doc/copyright/COPYING.
+
+The only changes made to lrzsz for debian were adding the proper control files
+and slightly modifying the Makefile in order to be compatible with the debian
+packaging scheme.
+
+Matt Porter <porter+@osu.edu>
+8-14-94

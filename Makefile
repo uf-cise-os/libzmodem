@@ -63,14 +63,6 @@ tags:
 linux:
 	$(CC) $(CFLAGS) -DLINUX -DMD=2 lrz.c -o lrz
 	$(CC) $(CFLAGS) -DLINUX -DTXBSIZE=32768 -DNFGVMIN lsz.c -o lsz
-	install -m755 lrz $(BINDIR)
-	install -m755 lsz $(BINDIR)
-	( cd $(BINDIR) ; ln -fs lrz lrb )
-	( cd $(BINDIR) ; ln -fs lrz lrx )
-	( cd $(BINDIR) ; ln -fs lsz lsb )
-	( cd $(BINDIR) ; ln -fs lsz lsx )
-	install -m644 lrz.1 $(MANDIR)
-	install -m644 lsz.1 $(MANDIR)
 
 xenix:
 	cc -M0 -Ox -K -i -DTXBSIZE=16384 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
