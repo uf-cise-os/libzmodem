@@ -2,7 +2,8 @@ Source: lrzsz
 Section: comm
 Priority: optional
 Maintainer: Josip Rodin <jrodin@jagor.srce.hr>
-Standards-Version: 2.5.1
+Standards-Version: 3.5.2
+Build-Depends: debhelper
 
 Package: lrzsz
 Architecture: any

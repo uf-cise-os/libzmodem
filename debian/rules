@@ -2,33 +2,36 @@
 # Derived from debhelper/dh_make example.
 
 #export DH_VERBOSE=1
+tmp := $(CURDIR)/debian/tmp
+
+CFLAGS := -O2
+ifneq "$(findstring debug,$(DEB_BUILD_OPTIONS))" ""
+CFLAGS += -g
+endif
 
 build: build-stamp
 build-stamp:
 	dh_testdir
-	./configure --prefix=/usr --mandir=/usr/share/man \
-                    --program-transform-name=s/l//
-	$(MAKE) 
-	touch build-stamp
+	CFLAGS="$(CFLAGS)" ./configure --prefix=/usr \
+          --mandir='$${prefix}/share/man' --program-transform-name=s/l//
+	touch stamp-h.in # to stop autoheader from running
+	$(MAKE)
+	touch $@
 
 clean:
 	dh_testdir
 	dh_testroot
-	rm -f build-stamp install-stamp
 	[ ! -f Makefile ] || $(MAKE) distclean
-	dh_clean
+	dh_clean build-stamp
 
-install: install-stamp
-install-stamp: build-stamp
+install: build-stamp
 	dh_testdir
 	dh_testroot
 	dh_clean -k
 	dh_installdirs
-	$(MAKE) install prefix=`pwd`/debian/tmp/usr \
-                        mandir=`pwd`/debian/tmp/usr/share/man
-	touch install-stamp
+	$(MAKE) install prefix=$(tmp)/usr
 
-binary-indep: build install
+binary-indep:
 # We have nothing to do, no architecture independent packages here.
 
 binary-arch: build install
@@ -37,9 +40,11 @@ binary-arch: build install
 	dh_installdocs NEWS README README.cvs README.isdn4linux TODO
 #	dh_installmanpages ansi2knr.1
 	dh_installchangelogs ChangeLog
+ifeq "$(findstring nostrip,$(DEB_BUILD_OPTIONS))" ""
 	dh_strip
+endif
 	dh_compress
-	cd debian/tmp/usr/share/man/man1 ; \
+	cd $(tmp)/usr/share/man/man1 ; \
            ln -s rz.1.gz rb.1.gz ; \
            ln -s rz.1.gz rx.1.gz ; \
            ln -s sz.1.gz sb.1.gz ; \
@@ -51,8 +56,5 @@ binary-arch: build install
 	dh_md5sums
 	dh_builddeb
 
-source diff:                                                                  
-	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
-
 binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary
+.PHONY: build clean binary-indep binary-arch binary install
