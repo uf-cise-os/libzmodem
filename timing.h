@@ -1,1 +1,0 @@
-double timing(int reset);
