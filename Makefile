@@ -2,7 +2,7 @@
 # the makefile is not too well tested yet
 
 CC=gcc
-CFLAGS=-O2 -s -m486 -fomit-frame-pointer
+CFLAGS=-O2
 BINDIR=/usr/bin
 MANDIR=/usr/man/man1
 
@@ -61,8 +61,8 @@ tags:
 	ctags sz.c rz.c zm.c rbsb.c
 
 linux:
-	$(CC) $(CFLAGS) -DLINUX -DMD=2 lrz.c -o lrz
-	$(CC) $(CFLAGS) -DLINUX -DTXBSIZE=32768 -DNFGVMIN lsz.c -o lsz
+	$(CC) $(CFLAGS) -DLINUX -DMD=2 lrz.c timing.c -o lrz
+	$(CC) $(CFLAGS) -DLINUX -DTXBSIZE=32768 -DNFGVMIN lsz.c timing.c -o lsz
 
 xenix:
 	cc -M0 -Ox -K -i -DTXBSIZE=16384 -DNFGVMIN -DREADCHECK sz.c -lx -o sz

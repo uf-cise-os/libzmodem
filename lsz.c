@@ -146,6 +146,9 @@ jmp_buf tohere;		/* For the interrupt on RX timeout */
 jmp_buf intrjmp;	/* For the interrupt on RX CAN */
 
 /* called by signal interrupt or terminate to clean things up */
+#ifdef LINUX
+void
+#endif
 bibi(n)
 {
 	canit(); fflush(stdout); mode(0);
@@ -158,9 +161,12 @@ bibi(n)
 	exit(128+n);
 }
 /* Called when ZMODEM gets an interrupt (^X) */
-onintr()
+#ifdef LINUX
+void
+#endif
+onintr(int signum)
 {
-	signal(SIGINT, SIG_IGN);
+	signal(signum, SIG_IGN);
 	longjmp(intrjmp, -1);
 }
 
@@ -336,7 +342,6 @@ char *argv[];
 
 	mode(1);
 
-#ifndef LINUX
 	if (signal(SIGINT, bibi) == SIG_IGN) {
 		signal(SIGINT, SIG_IGN); signal(SIGKILL, SIG_IGN);
 	} else {
@@ -345,7 +350,6 @@ char *argv[];
 	if ( !Fromcu)
 		signal(SIGQUIT, SIG_IGN);
 	signal(SIGTERM, bibi);
-#endif
 
 	if ( !Modem2) {
 		if (!Nozmodem) {
@@ -846,10 +850,12 @@ register char *f;
 	}
 }
 
-
-alrm()
+#ifdef LINUX
+void
+#endif
+alrm(int signum)
 {
-	longjmp(tohere, -1);
+	longjmp(tohere, signum);
 }
 
 
@@ -873,9 +879,9 @@ readline(timeout)
 	if (Verbose>5) {
 		fprintf(stderr, "Timeout=%d Calling alarm(%d) ", timeout, c);
 	}
-#ifndef LINUX
+
 	signal(SIGALRM, alrm); alarm(c);
-#endif
+
 	c=read(iofd, byt, 1);
 	alarm(0);
 	if (Verbose>5)
@@ -1243,19 +1249,15 @@ gotack:
 				c = getinsync(1);
 				goto gotack;
 			case XOFF:		/* Wait a while for an XON */
-#ifndef LINUX
 			case XOFF|0200:
-#endif
 				readline(100);
 			}
 		}
 #endif
 	}
 
-#ifndef LINUX
 	if ( !Fromcu)
 		signal(SIGINT, onintr);
-#endif
 
 	newcnt = Rxbuflen;
 	Txwcnt = 0;
@@ -1287,9 +1289,7 @@ gotack:
 #endif
 						goto waitack;
 					case XOFF:	/* Wait for XON */
-#ifndef LINUX
 					case XOFF|0200:
-#endif
 						readline(100);
 					}
 				}
@@ -1363,9 +1363,7 @@ gotack:
 				zsdata(txbuf, 0, ZCRCE);
 				goto gotack;
 			case XOFF:		/* Wait a while for an XON */
-#ifndef LINUX
 			case XOFF|0200:
-#endif
 				readline(100);
 			default:
 				++junkcount;

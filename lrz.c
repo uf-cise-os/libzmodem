@@ -132,13 +132,18 @@ jmp_buf tohere;		/* For the interrupt on RX timeout */
 #include "zm.c"
 
 int tryzhdrtype=ZRINIT;	/* Header type to send corresponding to Last rx close */
-
-alrm()
+#ifdef LINUX
+void
+#endif
+alrm(int signum)
 {
-	longjmp(tohere, -1);
+	longjmp(tohere, signum);
 }
 
 /* called by signal interrupt or terminate to clean things up */
+#ifdef LINUX
+void
+#endif
 bibi(n)
 {
 	if (Zmodem)
@@ -243,7 +248,7 @@ char *argv[];
 	}
 	vfile("%s %s for %s\n", Progname, VERSION, OS);
 	mode(1);
-#ifndef LINUX
+
 	if (signal(SIGINT, bibi) == SIG_IGN) {
 		signal(SIGINT, SIG_IGN); signal(SIGKILL, SIG_IGN);
 	}
@@ -251,7 +256,7 @@ char *argv[];
 		signal(SIGINT, bibi); signal(SIGKILL, bibi);
 	}
 	signal(SIGTERM, bibi);
-#endif
+
 	if (wcreceive(npats, patts)==ERROR) {
 		exitcode=0200;
 		canit();
@@ -578,9 +583,9 @@ int timeout;
 			fprintf(stderr, "Readline:TIMEOUT\n");
 		return TIMEOUT;
 	}
-#ifndef LINUX
+
 	signal(SIGALRM, alrm); alarm(n);
-#endif
+
 	Lleft=read(iofd, cdq=linbuf, Readnum);
 	alarm(0);
 	if (Verbose > 5) {

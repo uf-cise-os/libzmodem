@@ -1,60 +1,70 @@
 #!/usr/bin/make -f
-#
-# debian.rules file for lrzsz 0.11
 
-build:		checkdir
-	$(MAKE) linux
+# Package name
+PKG := lrzsz
 
-install:	checkroot build    
-	sh ./debian.preinst
-	install -m755 lrz /usr/bin
-	install -m755 lsz /usr/bin
-	( cd /usr/bin ; ln -fs lrz lrb )
-	( cd /usr/bin ; ln -fs lrz lrx )
-	( cd /usr/bin ; ln -fs lsz lsb )
-	( cd /usr/bin ; ln -fs lsz lsx )
-	install -m644 lrz.1 /usr/man/man1
-	install -m644 lsz.1 /usr/man/man1
-	install -m644 debian.README /usr/doc/copyright/lrzsz
+# Package version
+VER := 0.12a
 
-clean:		checkdir
-	-$(MAKE) -i clean
-	-rm -rf debian-tmp *~
+# Package revision
+DEB := 4
 
-binary:		checkroot build
-	-rm -rf debian-tmp
-	mkdir debian-tmp debian-tmp/DEBIAN
-	install -d debian-tmp/usr/doc/copyright
-	cp debian.control debian-tmp/DEBIAN/control
-	cp debian.preinst debian-tmp/DEBIAN/preinst
-	chmod +x debian-tmp/DEBIAN/preinst
-	mkdir debian-tmp/usr/bin
-	install -m755 lrz debian-tmp/usr/bin 
-	install -m755 lsz debian-tmp/usr/bin    
-	( cd debian-tmp/usr/bin ; ln -fs lrz lrb ) 
-	( cd debian-tmp/usr/bin ; ln -fs lrz lrx ) 
-	( cd debian-tmp/usr/bin ; ln -fs lsz lsb ) 
-	( cd debian-tmp/usr/bin ; ln -fs lsz lsx ) 
-	mkdir debian-tmp/usr/man debian-tmp/usr/man/man1
-	install -m644 lrz.1 debian-tmp/usr/man/man1
-	install -m644 lsz.1 debian-tmp/usr/man/man1
-	cp debian.README debian-tmp/usr/doc/copyright/lrzsz
-	dpkg --build debian-tmp
-	mv debian-tmp.deb ../lrzsz.deb
+# Top directory of pre-deb hierarchy
+TMP := $(shell pwd)/tmp
 
-source:		checkdir clean
-	chmod +x debian.rules
-	cd .. && \
-	tar cf lrzsz-0.11.tar lrzsz && \
-	gzip -9vf lrzsz-0.11.tar
+# Get the architecture for the binary
+ARC := $(shell dpkg --print-architecture)
+	
+# Temporary directories
+TMPDIRS := $(PKG)-src \
+	$(TMP) \
+	$(TMP)/DEBIAN \
+	$(TMP)/usr/bin \
+	$(TMP)/usr/doc/copyright \
+	$(TMP)/usr/man/man1
 
-diff:		checkdir clean
-	cd .. && \
-	(diff -ruN lrzsz-orig lrzsz >lrzsz-0.11.debian.diff; [ $$? = 1 ]) && \
-	gzip -9vf lrzsz-0.11.debian.diff
+# All of our targets are just actions
+.PHONY: all build binary source diff
 
-checkdir:
-	test -f lrz.c
+# Perform all important actions by default
+all: binary source diff
 
-checkroot:	checkdir
-	test root = "`whoami`"
+# Makes a binary package.
+build:
+	make linux
+
+# Makes a binary package.
+binary: build $(TMPDIRS)
+	install -o root -g root -m 755 -s lrz $(TMP)/usr/bin/rz
+	install -o root -g root -m 755 -s lsz $(TMP)/usr/bin/sz
+	install -o root -g root -m 644 lrz.1 $(TMP)/usr/man/man1/rz.1
+	install -o root -g root -m 644 lsz.1 $(TMP)/usr/man/man1/sz.1
+	( cd $(TMP)/usr/bin && ln -sf rz rb && ln -sf rz rx )
+	( cd $(TMP)/usr/bin && ln -sf sz sb && ln -sf sz sx )
+	( cd $(TMP)/usr/man/man1 && ln -sf rz.1 rb.1 && ln -sf rz.1 rx.1 )
+	( cd $(TMP)/usr/man/man1 && ln -sf sz.1 sb.1 && ln -sf sz.1 sx.1 )
+	install -o root -g root -m 644 debian.copyright $(TMP)/usr/doc/copyright/$(PKG)
+	sed -e 's/=V/$(VER)-$(DEB)/' -e 's/=A/$(ARC)/' < debian.control > $(TMP)/DEBIAN/control
+	chmod 644 $(TMP)/DEBIAN/control
+	dpkg --build $(TMP)
+	mv $(TMP).deb ../$(PKG)-$(VER)-$(DEB).$(ARC).deb
+
+# Creates temporary directory hierarchy
+$(TMPDIRS):
+	install -d -g root -o root -m 755 $@
+	chmod g-s $@
+
+# Undoes the effect of `make -f debian.rules build'.
+clean:
+	make clean
+	-rm -rf $(TMP) *~
+
+# Makes a context diff.
+diff: 
+	cvs rdiff -u -r DIST debian/$(PKG) | gzip -9f > ../$(PKG)-$(VER)-$(DEB).diff.gz
+
+# Makes a source package.
+source:
+	cvs export -d $(PKG)-src/$(PKG)-$(VER) -D now debian/$(PKG)
+	cd $(PKG)-src && tar cf - $(PKG)-$(VER) | gzip -9f > ../../$(PKG)-$(VER)-$(DEB).tar.gz
+	rm -rf $(PKG)-src
