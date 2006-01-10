@@ -1,3 +1,14 @@
+lrzsz (0.12.21-4.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Rebuilt with current debhelper, finishing the /usr/doc transition.
+    Closes: #322762
+  * Rebuilt with a current toolchain, now it's prelinkable.
+    Closes: #288084
+  * Appled man page typo fix patch from A Costa. Closes: #311459
+
+ -- Joey Hess <joeyh@debian.org>  Tue, 10 Jan 2006 01:35:00 -0500
+
 lrzsz (0.12.21-4) unstable; urgency=low
 
   * Updated for Standards-Version: 3.5.2.
