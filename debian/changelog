@@ -1,3 +1,21 @@
+lrzsz (0.12.21-5) unstable; urgency=low
+
+  * New maintainer upload, closes: #556238.
+    Thanks to Josip Rodin for his work.
+  * Removed build-dependency on debhelper.
+  * Added build-dependency on autotools-dev.
+  * Cut Debian diff.gz into pieces.
+  * Updated FSF address in copyright file.
+  * Updated German po file, added build-dependency on gettext.
+    Closes: #313992, thanks to Jens Seidel and Tobias Toedter.
+  * Fixed missing includes (compiler warnings).
+  * Fixed typo in sz manpage.
+  * Fixed linking to libnsl.
+  * Removed changelog emacs settings.
+  * Updated standards version.
+
+ -- Martin A. Godisch <godisch@debian.org>  Sun, 22 Nov 2009 09:35:13 +0100
+
 lrzsz (0.12.21-4.1) unstable; urgency=low
 
   * Non-maintainer upload.
@@ -84,8 +102,3 @@ lrzsz (0.12b-1) unstable; urgency=low
   * New upstream version.
 
  -- Michael Alan Dorman <mdorman@calder.med.miami.edu>  Tue, 17 Sep 1996 13:39:23 -0400
-
-Local variables:
-mode: debian-changelog
-add-log-mailing-address: "jrodin@jagor.srce.hr"
-End:

@@ -1,9 +1,9 @@
 Source: lrzsz
 Section: comm
 Priority: optional
-Maintainer: Josip Rodin <jrodin@jagor.srce.hr>
-Standards-Version: 3.5.2
-Build-Depends: debhelper
+Maintainer: Martin A. Godisch <godisch@debian.org>
+Standards-Version: 3.8.3
+Build-Depends: autotools-dev, gettext
 
 Package: lrzsz
 Architecture: any
