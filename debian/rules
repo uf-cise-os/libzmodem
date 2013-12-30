@@ -10,19 +10,22 @@ else
   $(error Cannot cross-compile this package out-of-the-box)
 endif
 
-CFLAGS = -Wall -g
-ifneq "$(findstring noopt,$(DEB_BUILD_OPTIONS))" ""
-	CFLAGS += -O0
-else
-	CFLAGS += -O2
-endif
+CPPFLAGS = $(shell dpkg-buildflags --get CPPFLAGS)
+CFLAGS   = $(shell dpkg-buildflags --get CFLAGS)
+LDFLAGS  = $(shell dpkg-buildflags --get LDFLAGS)
+export CPPFLAGS
 export CFLAGS
+export LDFLAGS
 
-build: build-stamp
+build: build-arch build-indep
+
+build-arch: build-stamp
+
+build-indep: build-stamp
+
 build-stamp:
 	$(testdir)
 	cp -f /usr/share/misc/config.guess /usr/share/misc/config.sub .
-	-cat debian/patches/*.diff | patch -Ntp1 -r debian/rejected --no-backup-if-mismatch
 	./configure $(CONFFLAGS) --prefix=/usr --mandir='$${prefix}/share/man' --program-transform-name=s/l//
 	touch stamp-h.in # to stop autoheader from running
 	touch -d yesterday aclocal.m4 # to stop automake from running
@@ -36,13 +39,10 @@ clean:
 	touch stamp-h.in # to stop autoheader from running
 	touch -d yesterday aclocal.m4 # to stop automake from running
 	[ ! -f Makefile ] || $(MAKE) distclean
-	-cat `ls -r debian/patches/*.diff` /dev/null | patch -RNtp1 -r debian/rejected --no-backup-if-mismatch
 	rm -rf debian/tmp
 	rm -f build-stamp config.guess config.sub po/lrzsz.pot po/*.gmo debian/files debian/rejected debian/substvars
 
-binary: binary-arch
-
-binary-indep:
+binary: binary-arch binary-indep
 
 binary-arch: build
 	$(testdir)
@@ -73,8 +73,13 @@ endif
 	install -p -m 0644 debian/control debian/tmp/DEBIAN
 	cd debian/tmp && find usr -type f -print0 | xargs -0 md5sum > DEBIAN/md5sums
 
+	chown -R root:root debian/tmp
+	chmod -R go=u-w debian/tmp
+
 	dpkg-shlibdeps debian/tmp/usr/bin/*
 	dpkg-gencontrol -isp -plrzsz
 	dpkg --build debian/tmp ..
 
-.PHONY: build clean binary binary-indep binary-arch
+binary-indep:
+
+.PHONY: clean build build-arch build-indep binary binary-arch binary-indep

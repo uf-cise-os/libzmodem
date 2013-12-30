@@ -1,5 +1,5 @@
---- lrzsz-0.12.21.orig/po/de.po
-+++ lrzsz-0.12.21/po/de.po
+--- lrzsz-0.12.21/po/de.po.orig	1999-08-22 21:59:09.000000000 +0200
++++ lrzsz-0.12.21/po/de.po	2013-12-28 17:14:02.742048293 +0100
 @@ -1,17 +1,18 @@
 -# german translation of lrzsz output
 -# Copyright (C) 1997 Uwe Ohse
@@ -31,24 +31,24 @@
  
  #: src/lsz.c:422
  msgid "packetlength"
--msgstr "Paketl?nge"
+-msgstr "Paketlänge"
 +msgstr "PaketlÃ¤nge"
  
  #: src/lsz.c:427
  #, c-format
  msgid "packetlength out of range 24..%ld"
--msgstr "Argument der Option L au?erhalb des Bereichs 24..%ld"
+-msgstr "Argument der Option L außerhalb des Bereichs 24..%ld"
 +msgstr "Argument der Option L auÃŸerhalb des Bereichs 24..%ld"
  
  #: src/lsz.c:436
  msgid "framelength"
--msgstr "Framel?nge"
+-msgstr "Framelänge"
 +msgstr "FramelÃ¤nge"
  
  #: src/lsz.c:441
  #, c-format
  msgid "framelength out of range 32..%ld"
--msgstr "Argument der Option l au?erhalb des Bereichs 32..%ld"
+-msgstr "Argument der Option l außerhalb des Bereichs 32..%ld"
 +msgstr "Argument der Option l auÃŸerhalb des Bereichs 32..%ld"
  
  #: src/lrz.c:318 src/lsz.c:450
@@ -57,7 +57,7 @@
  
  #: src/lsz.c:452
  msgid "min_bps must be >= 0"
--msgstr "minimale BPS-Rate mu? >= 0 sein"
+-msgstr "minimale BPS-Rate muß >= 0 sein"
 +msgstr "minimale BPS-Rate muss >= 0 sein"
  
  #: src/lrz.c:324 src/lsz.c:458
@@ -67,7 +67,7 @@
  
  #: src/lrz.c:326 src/lsz.c:460
  msgid "min_bps_time must be > 1"
--msgstr "Zeitfenster f?r minimale BPS-Rate mu? > 1 Sekunde sein"
+-msgstr "Zeitfenster für minimale BPS-Rate muß > 1 Sekunde sein"
 +msgstr "Zeitfenster fÃ¼r minimale BPS-Rate muss > 1 Sekunde sein"
  
  #: src/lrz.c:342 src/lsz.c:484
@@ -82,7 +82,7 @@
  
  #: src/lrz.c:348 src/lsz.c:490
  msgid "minute to large (0..59)"
--msgstr "Minute zu gro? (0..59)"
+-msgstr "Minute zu groß (0..59)"
 +msgstr "Minute zu groÃŸ (0..59)"
  
  #: src/lrz.c:358 src/lrz.c:365 src/lsz.c:500 src/lsz.c:507
@@ -100,17 +100,17 @@
  
  #: src/lrz.c:396 src/lsz.c:518
  msgid "timeout out of range 10..1000"
--msgstr "Argument der Option t au?erhalb des Bereichs 10..1000"
+-msgstr "Argument der Option t außerhalb des Bereichs 10..1000"
 +msgstr "Argument der Option t auÃŸerhalb des Bereichs 10..1000"
  
  #: src/lrz.c:412 src/lsz.c:526
  msgid "security violation: can't do that under restricted shell\n"
--msgstr "Sicherheitsversto?: Ausf?hrung unter eingeschr?nkter Shell verboten\n"
+-msgstr "Sicherheitsverstoß: Ausführung unter eingeschränkter Shell verboten\n"
 +msgstr "SicherheitsverstoÃŸ: AusfÃ¼hrung unter eingeschrÃ¤nkter Shell verboten\n"
  
  #: src/lrz.c:402 src/lsz.c:533
  msgid "window size"
--msgstr "Fenstergr??e"
+-msgstr "Fenstergröße"
 +msgstr "FenstergrÃ¶ÃŸe"
  
  #: src/lrz.c:427 src/lrz.c:434 src/lsz.c:556 src/lsz.c:563
@@ -119,7 +119,7 @@
  
  #: src/lrz.c:449 src/lsz.c:571
  msgid "startup delay"
--msgstr "Startverz?gerung"
+-msgstr "Startverzögerung"
 +msgstr "StartverzÃ¶gerung"
  
  #: src/lrz.c:465 src/lrz.c:483 src/lrz.c:760 src/lrz.c:1122 src/lrz.c:1244
@@ -128,12 +128,12 @@
  
  #: src/lsz.c:612 src/lsz.c:627
  msgid "need at least one file to send"
--msgstr "es mu? mindestens ein Name einer zu sendenden Datei angegeben werden"
+-msgstr "es muß mindestens ein Name einer zu sendenden Datei angegeben werden"
 +msgstr "es muss mindestens ein Name einer zu sendenden Datei angegeben werden"
  
  #: src/lsz.c:629
  msgid "Can't send command in restricted mode\n"
--msgstr "Im eingeschr?nkten Modus ist das Senden von Kommandos verboten\n"
+-msgstr "Im eingeschränkten Modus ist das Senden von Kommandos verboten\n"
 +msgstr "Im eingeschrÃ¤nkten Modus ist das Senden von Kommandos verboten\n"
  
  #: src/lrz.c:527 src/lsz.c:656
@@ -151,24 +151,24 @@
  
  #: src/lrz.c:574 src/lsz.c:803
  msgid "Transfer incomplete\n"
--msgstr "?bertragung nicht abgeschlossen\n"
+-msgstr "Übertragung nicht abgeschlossen\n"
 +msgstr "Ãœbertragung nicht abgeschlossen\n"
  
  #: src/lrz.c:576 src/lsz.c:805
  msgid "Transfer complete\n"
--msgstr "?bertragung abgeschlossen\n"
+-msgstr "Übertragung abgeschlossen\n"
 +msgstr "Ãœbertragung abgeschlossen\n"
  
  #: src/lsz.c:838
  #, c-format
  msgid "send_pseudo %s: cannot open tmpfile %s: %s"
--msgstr "send_pseudo %s: kann tempor?re Datei %s nicht ?ffnen: %s"
+-msgstr "send_pseudo %s: kann temporäre Datei %s nicht öffnen: %s"
 +msgstr "send_pseudo %s: kann temporÃ¤re Datei %s nicht Ã¶ffnen: %s"
  
  #: src/lsz.c:851
  #, c-format
  msgid "send_pseudo %s: cannot lstat tmpfile %s: %s"
--msgstr "send_pseudo %s: kann lstat nicht auf tempor?re Datei %s anwenden: %s"
+-msgstr "send_pseudo %s: kann lstat nicht auf temporäre Datei %s anwenden: %s"
 +msgstr "send_pseudo %s: kann lstat nicht auf temporÃ¤re Datei %s anwenden: %s"
  
  #: src/lsz.c:859
@@ -177,7 +177,7 @@
  #: src/lsz.c:870
  #, c-format
  msgid "send_pseudo %s: cannot write to tmpfile %s: %s"
--msgstr "send_pseudo %s: kann nicht in tempor?re Datei %s schreiben: %s"
+-msgstr "send_pseudo %s: kann nicht in temporäre Datei %s schreiben: %s"
 +msgstr "send_pseudo %s: kann nicht in temporÃ¤re Datei %s schreiben: %s"
  
  #: src/lsz.c:879
@@ -186,19 +186,19 @@
  
  #: src/lsz.c:953
  msgid "Can't open any requested files."
--msgstr "Kann keine der angeforderten Dateien ?ffnen"
+-msgstr "Kann keine der angeforderten Dateien öffnen"
 +msgstr "Kann keine der angeforderten Dateien Ã¶ffnen"
  
  #: src/lsz.c:1009
  #, c-format
  msgid "security violation: not allowed to upload from %s"
--msgstr "Sicherheitsversto?: Ausf?hrung unter eingeschr?nkter Shell verboten"
+-msgstr "Sicherheitsverstoß: Ausführung unter eingeschränkter Shell verboten"
 +msgstr "SicherheitsverstoÃŸ: Hochladen von %s nicht erlaubt"
  
  #: src/lrz.c:1384 src/lsz.c:1027
  #, c-format
  msgid "cannot open %s"
--msgstr "kann %s nicht ?ffnen"
+-msgstr "kann %s nicht öffnen"
 +msgstr "kann %s nicht Ã¶ffnen"
  
  #: src/lsz.c:1082
@@ -207,13 +207,13 @@
  #: src/lsz.c:1119
  #, c-format
  msgid "skipped: %s"
--msgstr "?bersprungen: %s"
+-msgstr "übersprungen: %s"
 +msgstr "Ã¼bersprungen: %s"
  
  #: src/lsz.c:1122
  #, c-format
  msgid "%s/%s: skipped"
--msgstr "%s/%s: ?bersprungen"
+-msgstr "%s/%s: übersprungen"
 +msgstr "%s/%s: Ã¼bersprungen"
  
  #: src/lsz.c:1149
@@ -222,7 +222,7 @@
  #: src/lsz.c:1178
  #, c-format
  msgid "Sending %s, %ld blocks: "
--msgstr "Sende %s, %ld Bl?cke:"
+-msgstr "Sende %s, %ld Blöcke:"
 +msgstr "Sende %s, %ld BlÃ¶cke:"
  
  #: src/lsz.c:1181
@@ -231,12 +231,12 @@
  
  #: src/lsz.c:1314
  msgid "Receiver Cancelled"
--msgstr "Empf?nger brach ab"
+-msgstr "Empfänger brach ab"
 +msgstr "EmpfÃ¤nger brach ab"
  
  #: src/lsz.c:1340
  msgid "No ACK on EOT"
--msgstr "Keine Best?tigung f?r ?bertragungsende erhalten"
+-msgstr "Keine Bestätigung für Übertragungsende erhalten"
 +msgstr "Keine BestÃ¤tigung fÃ¼r Ãœbertragungsende erhalten"
  
  #: src/lsz.c:1361
@@ -245,12 +245,12 @@
  
  #: src/lsz.c:1399
  msgid "Timeout on sector ACK"
--msgstr "Timeout bei Sektorbest?tigung"
+-msgstr "Timeout bei Sektorbestätigung"
 +msgstr "Timeout bei SektorbestÃ¤tigung"
  
  #: src/lsz.c:1404
  msgid "NAK on sector"
--msgstr "Sektor nicht best?tigt"
+-msgstr "Sektor nicht bestätigt"
 +msgstr "Sektor nicht bestÃ¤tigt"
  
  #: src/lsz.c:1410
@@ -261,12 +261,12 @@
  #: src/lsz.c:1412
  #, c-format
  msgid "Got %02x for sector ACK"
--msgstr "Erhielt %02x als Sektorbest?tigung"
+-msgstr "Erhielt %02x als Sektorbestätigung"
 +msgstr "Erhielt %02x als SektorbestÃ¤tigung"
  
  #: src/lsz.c:1424
  msgid "Retry Count Exceeded"
--msgstr "Maximale Wiederholungsanzahl ?berschritten"
+-msgstr "Maximale Wiederholungsanzahl überschritten"
 +msgstr "Maximale Wiederholungsanzahl Ã¼berschritten"
  
  #: src/lrz.c:596 src/lsz.c:1502
@@ -280,7 +280,7 @@
  
  #: src/lsz.c:1513
  msgid "Send file(s) with ZMODEM/YMODEM/XMODEM protocol\n"
--msgstr "Dateien mit ZMODEM/YMODEM/XMODEM ?bertragen\n"
+-msgstr "Dateien mit ZMODEM/YMODEM/XMODEM übertragen\n"
 +msgstr "Dateien mit ZMODEM/YMODEM/XMODEM Ã¼bertragen\n"
  
  # src/lrz.c:475 src/lsz.c:1330 xx
@@ -289,9 +289,9 @@
  "    (Y) = option applies to YMODEM only\n"
  "    (Z) = option applies to ZMODEM only\n"
  msgstr ""
--"    (X) = Option gilt nur f?r XMODEM\n"
--"    (Y) = Option gilt nur f?r YMODEM\n"
--"    (Z) = Option gilt nur f?r ZMODEM\n"
+-"    (X) = Option gilt nur für XMODEM\n"
+-"    (Y) = Option gilt nur für YMODEM\n"
+-"    (Z) = Option gilt nur für ZMODEM\n"
 +"    (X) = Option gilt nur fÃ¼r XMODEM\n"
 +"    (Y) = Option gilt nur fÃ¼r YMODEM\n"
 +"    (Z) = Option gilt nur fÃ¼r ZMODEM\n"
@@ -302,44 +302,44 @@
  "  -m, --min-bps N             stop transmission if BPS below N\n"
  "  -M, --min-bps-time N          for at least N seconds (default: 120)\n"
  msgstr ""
--"  -+, --append                an existierende Dateien anh?ngen (Z)\n"
+-"  -+, --append                an existierende Dateien anhängen (Z)\n"
 +"  -+, --append                an existierende Dateien anhÃ¤ngen (Z)\n"
  "  -2, --twostop               zwei Stopbits verwenden\n"
--"  -4, --try-4k                bis zu 4K Blockgr??e verwenden\n"
--"      --start-4k              mit 4K Blockgr??e starten (versucht nicht 8)\n"
--"  -8, --try-8k                bis zu 8K Blockgr??e verwenden\n"
--"      --start-8k              mit 8K Blockgr??e starten\n"
+-"  -4, --try-4k                bis zu 4K Blockgröße verwenden\n"
+-"      --start-4k              mit 4K Blockgröße starten (versucht nicht 8)\n"
+-"  -8, --try-8k                bis zu 8K Blockgröße verwenden\n"
+-"      --start-8k              mit 8K Blockgröße starten\n"
 +"  -4, --try-4k                bis zu 4K BlockgrÃ¶ÃŸe verwenden\n"
 +"      --start-4k              mit 4K BlockgrÃ¶ÃŸe starten (versucht nicht 8)\n"
 +"  -8, --try-8k                bis zu 8K BlockgrÃ¶ÃŸe verwenden\n"
 +"      --start-8k              mit 8K BlockgrÃ¶ÃŸe starten\n"
  "  -a, --ascii                 ASCII: NL nach CR/LF wandeln\n"
--"  -b, --binary                Bin?r?bertragung erzwingen\n"
+-"  -b, --binary                Binärübertragung erzwingen\n"
 +"  -b, --binary                BinÃ¤rÃ¼bertragung erzwingen\n"
  "  -B, --bufsize N             N Bytes puffern (auto: ganze Datei puffern)\n"
--"  -c, --command COMMAND       Kommando KOMMANDO auf Gegenseite ausf?hren "
+-"  -c, --command COMMAND       Kommando KOMMANDO auf Gegenseite ausführen "
 +"  -c, --command COMMAND       Kommando KOMMANDO auf Gegenseite ausfÃ¼hren "
  "(Z)\n"
--"  -C, --command-tries N       N mal Kommandoausf?hrung versuchen (Z)\n"
+-"  -C, --command-tries N       N mal Kommandoausführung versuchen (Z)\n"
 +"  -C, --command-tries N       N mal KommandoausfÃ¼hrung versuchen (Z)\n"
  "  -d, --dot-to-slash C        '.' in Dateinamen nach '/' wandeln (Y/Z)\n"
  "      --delay-startup N       Bei Programmstart N Sek. schlafen (Debugging)\n"
  "  -e, --escape                alle Steuerzeichen escapen (Z)\n"
--"  -E, --rename                Empf?nger soll Datei umbenennen falls\n"
+-"  -E, --rename                Empfänger soll Datei umbenennen falls\n"
 +"  -E, --rename                EmpfÃ¤nger soll Datei umbenennen falls\n"
  "                              Zieldatei schon existiert\n"
  "  -f, --full-path             Dateien mit vollen Pfaden senden (Y/Z)\n"
--"  -i, --immediate-command CMD wie `c', aber sofort zur?ckkehren (Z)\n"
+-"  -i, --immediate-command CMD wie `c', aber sofort zurückkehren (Z)\n"
 +"  -i, --immediate-command CMD wie `c', aber sofort zurÃ¼ckkehren (Z)\n"
  "  -h, --help                  diesen Hilfetext ausgeben\n"
  "  -k, --1k                    1024 Bytes Pakete senden (Y)\n"
--"  -L, --packetlen N           Unterpaketl?nge auf N Bytes beschr?nken (Z)\n"
--"  -l, --framelen N            Rahmenl?nge auf N Bytes beschr?nken (l>=L) "
+-"  -L, --packetlen N           Unterpaketlänge auf N Bytes beschränken (Z)\n"
+-"  -l, --framelen N            Rahmenlänge auf N Bytes beschränken (l>=L) "
 +"  -L, --packetlen N           UnterpaketlÃ¤nge auf N Bytes beschrÃ¤nken (Z)\n"
 +"  -l, --framelen N            RahmenlÃ¤nge auf N Bytes beschrÃ¤nken (l>=L) "
  "(Z)\n"
--"  -m, --min-bps N             ?bertragung abbrechen bei weniger als N BPS\n"
--"  -M, --min-bps-time N          f?r mindestens N Sekunden (Default: 120)\n"
+-"  -m, --min-bps N             Übertragung abbrechen bei weniger als N BPS\n"
+-"  -M, --min-bps-time N          für mindestens N Sekunden (Default: 120)\n"
 +"  -m, --min-bps N             Ãœbertragung abbrechen bei weniger als N BPS\n"
 +"  -M, --min-bps-time N          fÃ¼r mindestens N Sekunden (Default: 120)\n"
  
@@ -349,22 +349,22 @@
  "short options use the same arguments as the long ones\n"
  msgstr ""
  "  -n, --newer                 Datei senden wenn sie neuer ist (Z)\n"
--"  -N, --newer-or-longer       Datei senden wenn neuer oder l?nger (Z)\n"
+-"  -N, --newer-or-longer       Datei senden wenn neuer oder länger (Z)\n"
 +"  -N, --newer-or-longer       Datei senden wenn neuer oder lÃ¤nger (Z)\n"
  "  -o, --16-bit-crc            16Bit CRC statt 32Bit CRC verwenden (Z)\n"
  "  -O, --disable-timeouts      Timeoutbehandlung abschalten\n"
--"  -p, --protect               existierende Dateien nicht ver?ndern\n"
--"  -r, --resume                unterbrochene ?bertragungen fortsetzen (Z)\n"
--"  -R, --restricted            eingeschr?nkter, sichererer Modus\n"
+-"  -p, --protect               existierende Dateien nicht verändern\n"
+-"  -r, --resume                unterbrochene Übertragungen fortsetzen (Z)\n"
+-"  -R, --restricted            eingeschränkter, sichererer Modus\n"
 +"  -p, --protect               existierende Dateien nicht verÃ¤ndern\n"
 +"  -r, --resume                unterbrochene Ãœbertragungen fortsetzen (Z)\n"
 +"  -R, --restricted            eingeschrÃ¤nkter, sichererer Modus\n"
  "  -q, --quiet                 leise, keine Ausgaben machen\n"
--"  -s, --stop-at {HH:MM|+N}    ?bertragung um HH:MM oder in N Sek. abbrechen\n"
--"      --tcp-server            Socket ?ffnen und auf Verbindung warten\n"
--"      --tcp-client ADDR:PORT  Socket ?ffnen und verbindung mit ...\n"
--"  -u, --unlink                Datei nach ?bertragung l?schen\n"
--"  -U, --unrestrict            eingeschr?nkten Modus aufheben (falls "
+-"  -s, --stop-at {HH:MM|+N}    Übertragung um HH:MM oder in N Sek. abbrechen\n"
+-"      --tcp-server            Socket öffnen und auf Verbindung warten\n"
+-"      --tcp-client ADDR:PORT  Socket öffnen und verbindung mit ...\n"
+-"  -u, --unlink                Datei nach Übertragung löschen\n"
+-"  -U, --unrestrict            eingeschränkten Modus aufheben (falls "
 +"  -s, --stop-at {HH:MM|+N}    Ãœbertragung um HH:MM oder in N Sek. abbrechen\n"
 +"      --tcp-server            Socket Ã¶ffnen, Verbindung abwarten (Z)\n"
 +"      --tcp-client ADDR:PORT  Socket Ã¶ffnen, verbinden mit ... (Z)\n"
@@ -372,17 +372,17 @@
 +"  -U, --unrestrict            eingeschrÃ¤nkten Modus aufheben (falls "
  "erlaubt)\n"
  "  -v, --verbose               mehr ausgeben\n"
--"  -w, --windowsize N          Fenstergr??e auf N Bytes setzen (Z)\n"
+-"  -w, --windowsize N          Fenstergröße auf N Bytes setzen (Z)\n"
 +"  -w, --windowsize N          FenstergrÃ¶ÃŸe auf N Bytes setzen (Z)\n"
  "  -X  --xmodem                XMODEM-Protokoll benutzen\n"
--"  -y, --overwrite             existierende Dateien ?berschreiben\n"
--"  -Y, --overwrite-or-skip     wie `y', aber nicht existierende ?berspringen\n"
+-"  -y, --overwrite             existierende Dateien überschreiben\n"
+-"  -Y, --overwrite-or-skip     wie `y', aber nicht existierende überspringen\n"
 +"  -y, --overwrite             existierende Dateien Ã¼berschreiben\n"
 +"  -Y, --overwrite-or-skip     wie `y', aber nicht existierende Ã¼berspringen\n"
  "      --ymodem                YMODEM-Protokoll benutzen\n"
  "  -Z, --zmodem                ZMODEM-Protokoll benutzen\n"
  "\n"
--"Kurze Optionen ben?tigen dieselben Argumente wie Lange.\n"
+-"Kurze Optionen benötigen dieselben Argumente wie Lange.\n"
 +"Kurze Optionen benÃ¶tigen dieselben Argumente wie die langen.\n"
  
  #: src/lsz.c:1768
@@ -391,7 +391,7 @@
  #: src/lsz.c:1991
  #, c-format
  msgid "blklen now %d\n"
--msgstr "Blockgr??e nun %d\n"
+-msgstr "Blockgröße nun %d\n"
 +msgstr "BlockgrÃ¶ÃŸe nun %d\n"
  
  #: src/lsz.c:2053
@@ -400,7 +400,7 @@
  #: src/lsz.c:2223
  #, c-format
  msgid "calc_blklen: reduced to %d due to error\n"
--msgstr "calc_blklen: Blockgr?sse auf %d reduziert wegen Fehler\n"
+-msgstr "calc_blklen: Blockgrösse auf %d reduziert wegen Fehler\n"
 +msgstr "calc_blklen: BlockgrÃ¶ÃŸe auf %d reduziert wegen Fehler\n"
  
  #: src/lsz.c:2256
@@ -415,7 +415,7 @@
  #: src/lsz.c:2278
  #, c-format
  msgid "calc_blklen: blklen %d, ok %ld, failed %ld -> %lu\n"
--msgstr "calc_blklen: Blockl?nge %d, ok %ld, fehlgeschlagen %ld -> %lu\n"
+-msgstr "calc_blklen: Blocklänge %d, ok %ld, fehlgeschlagen %ld -> %lu\n"
 +msgstr "calc_blklen: BlocklÃ¤nge %d, ok %ld, fehlgeschlagen %ld -> %lu\n"
  
  #: src/lsz.c:2290
@@ -424,7 +424,7 @@
  
  #: src/zm.c:712
  msgid "Garbage count exceeded"
--msgstr "Maximale Wiederholungsanzahl ?berschritten"
+-msgstr "Maximale Wiederholungsanzahl überschritten"
 +msgstr "Maximale Wiederholungsanzahl Ã¼berschritten"
  
  #: src/zm.c:773
@@ -433,12 +433,12 @@
  
  #: src/lrz.c:382
  msgid "don't have settimeofday, will not set time\n"
--msgstr "Zeitsynchronisation nicht ausf?hrbar, settimeofday() fehlt\n"
+-msgstr "Zeitsynchronisation nicht ausführbar, settimeofday() fehlt\n"
 +msgstr "Zeitsynchronisation nicht ausfÃ¼hrbar, settimeofday() fehlt\n"
  
  #: src/lrz.c:386
  msgid "not running as root (this is good!), can not set time\n"
--msgstr "Zeitsynchronisation mangels Superuserrechten nicht ausf?hrbar\n"
+-msgstr "Zeitsynchronisation mangels Superuserrechten nicht ausführbar\n"
 +msgstr "Zeitsynchronisation mangels Superuserrechten nicht ausfÃ¼hrbar\n"
  
  #: src/lrz.c:441
@@ -447,18 +447,18 @@
  
  #: src/lrz.c:455
  msgid "O_SYNC not supported by the kernel"
--msgstr "O_SYNC vom Kernel nicht unterst?tzt"
+-msgstr "O_SYNC vom Kernel nicht unterstützt"
 +msgstr "O_SYNC vom Kernel nicht unterstÃ¼tzt"
  
  #: src/lrz.c:497 src/lrz.c:499
  msgid "garbage on commandline"
--msgstr "M?ll auf der Kommandozeile"
+-msgstr "Müll auf der Kommandozeile"
 +msgstr "MÃ¼ll auf der Kommandozeile"
  
  #: src/lrz.c:604
  #, c-format
  msgid "Usage: %s [options] [filename.if.xmodem]\n"
--msgstr "Benutzung: %s [Optionen] [Dateiname.f?r.xmodem]\n"
+-msgstr "Benutzung: %s [Optionen] [Dateiname.für.xmodem]\n"
 +msgstr "Benutzung: %s [Optionen] [Dateiname.fÃ¼r.xmodem]\n"
  
  #: src/lrz.c:605
@@ -467,63 +467,63 @@
  "\n"
  "short options use the same arguments as the long ones\n"
  msgstr ""
--"  -+, --append                an existierende Dateien anh?ngen\n"
--"  -a, --ascii                 ASCII-?bertragung (CR/LF nach LF wandeln)\n"
--"  -b, --binary                Bin?r?bertragung (keine Umwandlungen)\n"
+-"  -+, --append                an existierende Dateien anhängen\n"
+-"  -a, --ascii                 ASCII-Übertragung (CR/LF nach LF wandeln)\n"
+-"  -b, --binary                Binärübertragung (keine Umwandlungen)\n"
 +"  -+, --append                an existierende Dateien anhÃ¤ngen\n"
 +"  -a, --ascii                 ASCII-Ãœbertragung (CR/LF nach LF wandeln)\n"
 +"  -b, --binary                BinÃ¤rÃ¼bertragung (keine Umwandlungen)\n"
  "  -B, --bufsize N             N Bytes puffern (auto: ganze Datei puffern)\n"
--"  -c, --with-crc              16bit CRC statt Pr?fsumme verwenden (X)\n"
--"  -C, --allow-remote-commands Ausf?hrung von Kommandos erlauben (Z)\n"
+-"  -c, --with-crc              16bit CRC statt Prüfsumme verwenden (X)\n"
+-"  -C, --allow-remote-commands Ausführung von Kommandos erlauben (Z)\n"
 +"  -c, --with-crc              16bit CRC statt PrÃ¼fsumme verwenden (X)\n"
 +"  -C, --allow-remote-commands AusfÃ¼hrung von Kommandos erlauben (Z)\n"
  "  -D, --null                  empfangene Daten nach /dev/null schreiben\n"
  "      --delay-startup N       Bei Programmstart N Sek. schlafen (Debugging)\n"
  "  -e, --escape                Alle Steuerzeichen escapen (Z)\n"
--"  -E, --rename                Empf?nger soll Datei umbenennen falls\n"
+-"  -E, --rename                Empfänger soll Datei umbenennen falls\n"
 +"  -E, --rename                EmpfÃ¤nger soll Datei umbenennen, falls\n"
  "                              Zieldatei schon existiert\n"
  "      --errors N              Einen CRC-Fehler alle N Bytes erzeugen\n"
  "  -h, --help                  Diesen Hilfstext ausgeben\n"
--"  -m, --min-bps N             ?bertragung abbrechen bei weniger als N BPS\n"
--"  -M, --min-bps-time N          f?r mindestens N Sekunden (Default: 120)\n"
+-"  -m, --min-bps N             Übertragung abbrechen bei weniger als N BPS\n"
+-"  -M, --min-bps-time N          für mindestens N Sekunden (Default: 120)\n"
 +"  -m, --min-bps N             Ãœbertragung abbrechen bei weniger als N BPS\n"
 +"  -M, --min-bps-time N          fÃ¼r mindestens N Sekunden (Default: 120)\n"
  "  -O, --disable-timeouts      Timeoutbehandlung abschalten\n"
  "      --o-sync                Ausgabedatei(en) im synchron schreiben\n"
--"  -p, --protect               existierende Dateien nicht ver?ndern\n"
+-"  -p, --protect               existierende Dateien nicht verändern\n"
 +"  -p, --protect               existierende Dateien nicht verÃ¤ndern\n"
  "  -q, --quiet                 leise, keine Ausgaben machen\n"
--"  -r, --resume                unterbrochene ?bertragungen fortsetzen (Z)\n"
--"  -R, --restricted            eingeschr?nkter, sichererer Modus\n"
--"  -s, --stop-at {HH:MM|+N}    ?bertragung um HH:MM oder in N Sek. abbrechen\n"
+-"  -r, --resume                unterbrochene Übertragungen fortsetzen (Z)\n"
+-"  -R, --restricted            eingeschränkter, sichererer Modus\n"
+-"  -s, --stop-at {HH:MM|+N}    Übertragung um HH:MM oder in N Sek. abbrechen\n"
 +"  -r, --resume                unterbrochene Ãœbertragungen fortsetzen (Z)\n"
 +"  -R, --restricted            eingeschrÃ¤nkter, sichererer Modus\n"
 +"  -s, --stop-at {HH:MM|+N}    Ãœbertragung um HH:MM oder in N Sek. abbrechen\n"
  "  -S, --timesync              Zeit anfordern (doppelt: lokale Zeit setzen)\n"
--"      --syslog[=off]          syslog an- oder ausschalten, wenn m?glich\n"
+-"      --syslog[=off]          syslog an- oder ausschalten, wenn möglich\n"
 -"  -t, --timeout N             Timeout auf N Zehntelsekungen setzen\n"
--"      --tcp-server            Socket ?ffnen und auf Verbindung warten\n"
--"      --tcp-client ADDR:PORT  Socket ?ffnen und verbindung mit ...\n"
+-"      --tcp-server            Socket öffnen und auf Verbindung warten\n"
+-"      --tcp-client ADDR:PORT  Socket öffnen und verbindung mit ...\n"
 +"      --syslog[=off]          syslog an- oder ausschalten, wenn mÃ¶glich\n"
 +"  -t, --timeout N             Timeout auf N Zehntelsekunden setzen\n"
 +"      --tcp-server            Socket Ã¶ffnen, Verbindung abwarten (Z)\n"
 +"      --tcp-client ADDR:PORT  Socket Ã¶ffnen, verbinden mit ... (Z)\n"
  "  -u, --keep-uppercase        GROSS geschrieben Dateinamen beibehalten\n"
--"  -U, --unrestrict            eingeschr?nkten Modus aufheben (falls "
+-"  -U, --unrestrict            eingeschränkten Modus aufheben (falls "
 +"  -U, --unrestrict            eingeschrÃ¤nkten Modus aufheben (falls "
  "erlaubt)\n"
  "  -v, --verbose               mehr ausgeben\n"
--"  -w, --windowsize N          Fenstergr??e auf N Bytes setzen (Z)\n"
+-"  -w, --windowsize N          Fenstergröße auf N Bytes setzen (Z)\n"
 +"  -w, --windowsize N          FenstergrÃ¶ÃŸe auf N Bytes setzen (Z)\n"
  "  -X  --xmodem                XMODEM-Protokoll benutzen\n"
--"  -y, --overwrite             existierende Dateien ?berschreiben\n"
+-"  -y, --overwrite             existierende Dateien überschreiben\n"
 +"  -y, --overwrite             existierende Dateien Ã¼berschreiben\n"
  "      --ymodem                YMODEM-Protokoll benutzen\n"
  "  -Z, --zmodem                ZMODEM-Protokoll benutzen\n"
  "\n"
--"Kurze Optionen ben?tigen dieselben Argumente wie Lange.\n"
+-"Kurze Optionen benötigen dieselben Argumente wie Lange.\n"
 +"Kurze Optionen benÃ¶tigen dieselben Argumente wie die langen.\n"
  
  #: src/lrz.c:676
@@ -532,12 +532,12 @@
  "%s: %s removed.\r\n"
  msgstr ""
  "\r\n"
--"%s: %s gel?scht\r\n"
+-"%s: %s gelöscht\r\n"
 +"%s: %s gelÃ¶scht\r\n"
  
  #: src/lrz.c:856
  msgid "Pathname fetch returned EOT"
--msgstr "Ende der ?bertragung beim Warten auf Dateinamen"
+-msgstr "Ende der Übertragung beim Warten auf Dateinamen"
 +msgstr "Ende der Ãœbertragung beim Warten auf Dateinamen"
  
  #: src/lrz.c:903
@@ -546,7 +546,7 @@
  
  #: src/lrz.c:976
  msgid "Checksum"
--msgstr "Pr?fsummenfehler"
+-msgstr "Prüfsummenfehler"
 +msgstr "PrÃ¼fsummenfehler"
  
  #: src/lrz.c:979
@@ -555,13 +555,13 @@
  #: src/lrz.c:1005
  #, c-format
  msgid "Got 0%o sector header"
--msgstr "Erhielt %02x als Sektorbest?tigung"
+-msgstr "Erhielt %02x als Sektorbestätigung"
 +msgstr "Erhielt %02x als SektorbestÃ¤tigung"
  
  #: src/lrz.c:1113
  #, c-format
  msgid "file name ends with a /, skipped: %s\n"
--msgstr "Dateiname endet mit /, ?bersprungen: %s\n"
+-msgstr "Dateiname endet mit /, übersprungen: %s\n"
 +msgstr "Dateiname endet mit /, Ã¼bersprungen: %s\n"
  
  #: src/lrz.c:1127
@@ -579,7 +579,7 @@
  #: src/lrz.c:1192 src/lrz.c:1226
  #, c-format
  msgid "file exists, skipped: %s\n"
--msgstr "Datei existiert, ?bersprungen: %s\n"
+-msgstr "Datei existiert, übersprungen: %s\n"
 +msgstr "Datei existiert, Ã¼bersprungen: %s\n"
  
  #: src/lrz.c:1267
@@ -588,7 +588,7 @@
  #: src/lrz.c:1545
  #, c-format
  msgid "Blocks received: %d"
--msgstr "Bl?cke empfangen: %d"
+-msgstr "Blöcke empfangen: %d"
 +msgstr "BlÃ¶cke empfangen: %d"
  
  #: src/lrz.c:1599
@@ -597,17 +597,17 @@
  #: src/lrz.c:1612 src/lrz.c:1620
  #, c-format
  msgid "%s:\tSecurity Violation"
--msgstr "%s:\tSicherheitsversto?"
+-msgstr "%s:\tSicherheitsverstoß"
 +msgstr "%s:\tSicherheitsverstoÃŸ"
  
  #: src/lrz.c:1730
  msgid "remote command execution requested"
--msgstr "Gegenseite versucht Kommandoausf?hrung"
+-msgstr "Gegenseite versucht Kommandoausführung"
 +msgstr "Gegenseite versucht KommandoausfÃ¼hrung"
  
  #: src/lrz.c:1737
  msgid "not executed"
--msgstr "nicht ausgef?hrt"
+-msgstr "nicht ausgeführt"
 +msgstr "nicht ausgefÃ¼hrt"
  
  #: src/lrz.c:1768
@@ -616,7 +616,7 @@
  
  #: src/lrz.c:1817
  msgid "Skipped"
--msgstr "?bersprungen"
+-msgstr "Übersprungen"
 +msgstr "Ãœbersprungen"
  
  #. too bad
@@ -625,7 +625,7 @@
  
  #: src/lrz.c:2215
  msgid "file close error"
--msgstr "Fehler beim Schlie?en der Datei"
+-msgstr "Fehler beim Schließen der Datei"
 +msgstr "Fehler beim SchlieÃŸen der Datei"
  
  #~ msgid "tcp protocol init failed\n"
@@ -635,7 +635,7 @@
  #~ msgstr "fgets() bei tcp Protokoll Synchronisation fehlgeschlagen: "
  
 -#~ msgid "Transfer complete."
--#~ msgstr "?bertragung abgeschlossen"
+-#~ msgstr "Übertragung abgeschlossen"
 -
 -#~ msgid "at"
 -#~ msgstr "um"
@@ -647,4 +647,4 @@
 -#~ msgstr "Zeitsynchronisation: ok\n"
 -
 -#~ msgid "Falldown to %ld blklen"
--#~ msgstr "Blockgr??e auf %ld gesenkt"
+-#~ msgstr "Blockgröße auf %ld gesenkt"

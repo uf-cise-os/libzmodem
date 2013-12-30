@@ -2,8 +2,9 @@ Source: lrzsz
 Section: comm
 Priority: optional
 Maintainer: Martin A. Godisch <godisch@debian.org>
-Standards-Version: 3.8.3
+Standards-Version: 3.9.5
 Build-Depends: autotools-dev, gettext
+Homepage: https://ohse.de/uwe/software/lrzsz.html
 
 Package: lrzsz
 Architecture: any

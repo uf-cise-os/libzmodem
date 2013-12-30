@@ -1,3 +1,19 @@
+lrzsz (0.12.21-7) unstable; urgency=low
+
+  * Fixed file permissions.
+
+ -- Martin A. Godisch <godisch@debian.org>  Mon, 30 Dec 2013 16:50:38 +0100
+
+lrzsz (0.12.21-6) unstable; urgency=low
+
+  * Changed source format to v3.0 (quilt).
+  * Updated build script.
+  * Fixed copyright file.
+  * Added watch file.
+  * Updated standards version.
+
+ -- Martin A. Godisch <godisch@debian.org>  Sat, 28 Dec 2013 17:32:43 +0100
+
 lrzsz (0.12.21-5) unstable; urgency=low
 
   * New maintainer upload, closes: #556238.
