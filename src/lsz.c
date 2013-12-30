@@ -53,7 +53,6 @@ void *mm_addr=NULL;
 #ifndef STRICT_PROTOTYPES
 extern time_t time();
 extern char *strerror();
-extern char *strstr();
 #endif
 
 #ifndef HAVE_ERRNO_DECLARATION
