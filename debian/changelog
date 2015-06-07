@@ -1,3 +1,9 @@
+lrzsz (0.12.21-8) unstable; urgency=low
+
+  * Fixed reproducible builds, closes: #787995, thanks to Dhole.
+
+ -- Martin A. Godisch <godisch@debian.org>  Sun, 07 Jun 2015 18:43:33 +0200
+
 lrzsz (0.12.21-7) unstable; urgency=low
 
   * Fixed file permissions.

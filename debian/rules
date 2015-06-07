@@ -13,6 +13,7 @@ endif
 CPPFLAGS = $(shell dpkg-buildflags --get CPPFLAGS)
 CFLAGS   = $(shell dpkg-buildflags --get CFLAGS)
 LDFLAGS  = $(shell dpkg-buildflags --get LDFLAGS)
+BUILD_DATE=$(shell dpkg-parsechangelog --show-field Date)
 export CPPFLAGS
 export CFLAGS
 export LDFLAGS
@@ -60,9 +61,9 @@ endif
 	install -p -m 0644 -D ChangeLog debian/tmp/usr/share/doc/lrzsz/changelog
 	install -p -m 0644 -D debian/changelog debian/tmp/usr/share/doc/lrzsz/changelog.Debian
 
-	find debian/tmp/usr/share/man -type f -print0 | xargs -0 gzip -9
+	find debian/tmp/usr/share/man -type f -print0 | xargs -0 gzip -9n
 	find debian/tmp/usr/share/doc -type f ! -name copyright ! -name '*.html' \
-		\( -name 'changelog*' -o -size +8 \) -print0 | xargs -0 gzip -9
+		\( -name 'changelog*' -o -size +8 \) -print0 | xargs -0 gzip -9n
 
 	ln -s rz.1.gz debian/tmp/usr/share/man/man1/rb.1.gz
 	ln -s rz.1.gz debian/tmp/usr/share/man/man1/rx.1.gz
@@ -78,6 +79,7 @@ endif
 
 	dpkg-shlibdeps debian/tmp/usr/bin/*
 	dpkg-gencontrol -isp -plrzsz
+	find debian/tmp -depth -newermt '$(BUILD_DATE)' -print0 | xargs -0r touch --no-dereference --date='$(BUILD_DATE)'
 	dpkg --build debian/tmp ..
 
 binary-indep:
