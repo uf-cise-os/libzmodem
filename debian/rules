@@ -72,7 +72,7 @@ endif
 
 	install -d -m 0755 debian/tmp/DEBIAN
 	install -p -m 0644 debian/control debian/tmp/DEBIAN
-	cd debian/tmp && find usr -type f -print0 | xargs -0 md5sum > DEBIAN/md5sums
+	cd debian/tmp && find usr -type f -print0 | LC_ALL=C sort -z | xargs -0 md5sum > DEBIAN/md5sums
 
 	chown -R root:root debian/tmp
 	chmod -R go=u-w debian/tmp

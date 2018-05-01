@@ -1,3 +1,20 @@
+lrzsz (0.12.21-10) unstable; urgency=high
+
+  * Fixed possible sz data leak, CVE-2018-10195, closes: #897010.
+    Patch from the Fedora project,
+    https://src.fedoraproject.org/cgit/rpms/lrzsz.git/tree/lrzsz-0.12.20.patch
+
+ -- Martin A. Godisch <godisch@debian.org>  Tue, 01 May 2018 15:34:22 +0200
+
+lrzsz (0.12.21-9) unstable; urgency=medium
+
+  * Non-maintainer upload.
+
+  [ Reiner Herrmann ]
+  * Make the build reproducible (Closes: #828856)
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sun, 22 Apr 2018 11:24:40 +0200
+
 lrzsz (0.12.21-8) unstable; urgency=low
 
   * Fixed reproducible builds, closes: #787995, thanks to Dhole.
