@@ -70,8 +70,6 @@ struct rz_ {
 	char *pathname;		/* filename of the file being received */
 	int thisbinary;		/* When > 0, current file is to be
 				 * received in bin mode */
-	int in_tcpsync;		/* True when we receive special file
-				 * '$tcp$.t' */
 	int tcp_socket;		/* A socket file descriptor */
 	char zconv;		/* ZMODEM file conversion request. */
 	char zmanag;		/* ZMODEM file management request. */
@@ -198,7 +196,6 @@ rz_init(int fd, size_t readnum, size_t bufsize, int no_timeout,
 	rz->tcp_flag = tcp_flag;
 	rz->pathname = NULL;
 	memset(rz->tcp_buf, 0, 256);
-	rz->in_tcpsync = 0;
 	rz->fout = NULL;
 	rz->topipe = topipe;
 	rz->errors = 0;
@@ -590,10 +587,6 @@ rz_process_header(rz_t *rz, char *name, struct zm_fileinfo *zi)
 	if (rz->skip_if_not_found)
 		openmode="r+";
 
-	rz->in_tcpsync=0;
-	if (0==strcmp(name,"$tcp$.t"))
-		rz->in_tcpsync=1;
-
 	zi->bytes_total = DEFBYTL;
 	zi->mode = 0;
 	zi->eof_seen = 0;
@@ -615,7 +608,6 @@ rz_process_header(rz_t *rz, char *name, struct zm_fileinfo *zi)
 	/* Check for existing file */
 	if (rz->zconv != ZCRESUM && !rz->rxclob && (rz->zmanag&ZF1_ZMMASK) != ZF1_ZMCLOB
 		&& (rz->zmanag&ZF1_ZMMASK) != ZF1_ZMAPND
-	    && !rz->in_tcpsync
 		&& (rz->fout=fopen(name, "r"))) {
 		struct stat sta;
 		char *tmpname;
@@ -689,17 +681,6 @@ rz_process_header(rz_t *rz, char *name, struct zm_fileinfo *zi)
 		if ( *--p == '.')		/* zap trailing period */
 			*p = 0;
 	}
-
-	if (rz->in_tcpsync) {
-		rz->fout=tmpfile();
-		if (!rz->fout) {
-			log_fatal(_("cannot tmpfile() for tcp protocol synchronization: %s"), strerror(errno));
-			exit(1);
-		}
-		zi->bytes_received=0;
-		return OK;
-	}
-
 
 	if (!rz->zm->zmodem_requested && rz->makelcpathname && !IsAnyLower(name_static)
 	  && !(zi->mode&UNIXFILE))
@@ -973,13 +954,6 @@ rz_zmodem_session_startup(rz_t *rz)
 					    0, 0, 0);
 		zm_send_hex_header(rz->zm, rz->tryzhdrtype);
 
-		if (rz->tcp_socket==-1 && strlen(rz->tcp_buf) > 0) {
-			/* we need to switch to tcp mode */
-			rz->tcp_socket=tcp_connect(rz->tcp_buf);
-			memset(rz->tcp_buf, 0, sizeof(rz->tcp_buf));
-			dup2(rz->tcp_socket,0);
-			dup2(rz->tcp_socket,1);
-		}
 		if (rz->tryzhdrtype == ZSKIP)	/* Don't skip too far */
 			rz->tryzhdrtype = ZRINIT;	/* CAF 8-21-87 */
 again:
@@ -1405,15 +1379,6 @@ rz_closeit(rz_t *rz, struct zm_fileinfo *zi)
 		if (pclose(rz->fout)) {
 			return ERROR;
 		}
-		return OK;
-	}
-	if (rz->in_tcpsync) {
-		rewind(rz->fout);
-		if (!fgets(rz->tcp_buf, sizeof(rz->tcp_buf), rz->fout)) {
-			log_fatal(_("fgets for tcp protocol synchronization failed: %s"), strerror(errno));
-			exit(1);
-		}
-		fclose(rz->fout);
 		return OK;
 	}
 	ret=fclose(rz->fout);

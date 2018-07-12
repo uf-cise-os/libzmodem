@@ -334,10 +334,6 @@ size_t zmodem_send(int file_count,
 	zm_set_header_payload(sz->zm, 0L);
 	zm_send_hex_header(sz->zm, ZRQINIT);
 	sz->zrqinits_sent++;
-	if (sz->tcp_flag==1) {
-		sz->totalleft+=256; /* tcp never needs more */
-		sz->filesleft++;
-	}
 	fflush(stdout);
 
 	/* This is the main loop.  */
@@ -448,23 +444,6 @@ sz_transmit_files (sz_t *sz, int argc, char *argp[])
 	sz->crcflg = FALSE;
 	sz->firstsec = TRUE;
 	sz->bytcnt = (size_t) -1;
-
-	if (sz->tcp_flag==1) {
-		char buf[256];
-		int d;
-
-		/* tell receiver to receive via tcp */
-		d=tcp_server(buf);
-		if (sz_send_pseudo(sz, "/$tcp$.t",buf)) {
-			log_fatal(_("tcp protocol init failed"));
-			exit(1);
-		}
-		/* ok, now that this file is sent we can switch to tcp */
-
-		sz->tcp_socket=tcp_accept(d);
-		dup2(sz->tcp_socket,0);
-		dup2(sz->tcp_socket,1);
-	}
 
 	/* Begin the main loop. */
 	for (n = 0; n < argc; ++n) {
@@ -986,8 +965,8 @@ usage(int exitcode, const char *what)
 "  -R, --restricted            restricted, more secure mode\n"
 "  -q, --quiet                 quiet (no progress reports)\n"
 "  -s, --stop-at {HH:MM|+N}    stop transmission at HH:MM or in N seconds\n"
-"      --tcp                   build a TCP connection to transmit files\n"
-"      --tcp-server            open socket, wait for connection\n"
+"      --tcp-server            open socket, wait for connection (Z)\n"
+"      --tcp-client ADDR:PORT  open socket, connect to ... (Z)\n"
 "  -u, --unlink                unlink file after transmission\n"
 "  -U, --unrestrict            turn off restricted mode (if allowed to)\n"
 "  -v, --verbose               be verbose, provide debugging information\n"
