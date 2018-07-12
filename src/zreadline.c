@@ -70,9 +70,9 @@ zreadline_getc(zreadline_t *zr, int timeout)
 }
 
 static void
-zreadline_alarm_handler(int dummy LRZSZ_ATTRIB_UNUSED)
+zreadline_alarm_handler(int dummy)
 {
-	/* doesn't need to do anything */
+	dummy++; /* doesn't need to do anything */
 }
 
 /*

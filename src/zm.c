@@ -93,6 +93,7 @@ static int zm_read_data32 (zm_t *zm, char *buf, int length, size_t *);
 static void zm_send_binary_header32 (zm_t *zm, int type);
 static void zm_escape_sequence_init (zm_t *zm);
 static void zm_put_escaped_string(zm_t *zm, const char *str, size_t len);
+static inline void zsendline_s __P((const char *s, size_t count));
 
 
 /* Return a newly allocated state machine for zm primitives. */

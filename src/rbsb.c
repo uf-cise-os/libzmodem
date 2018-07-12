@@ -77,6 +77,8 @@ static struct {
 	{0, 0}
 };
 
+static unsigned getspeed __P((speed_t));
+
 static unsigned
 getspeed(speed_t code)
 {
@@ -193,8 +195,11 @@ io_mode(int fd, int n)
 		if (n==3) /* with flow control */
 			tty.c_iflag |= IXOFF;
 
-		 /* No echo, crlf mapping, INTR, QUIT, delays, no erase/kill */
-		tty.c_lflag &= ~(ECHO | ICANON | ISIG);
+		/* Setup raw mode: no echo, noncanonical (no edit chars),
+		 * no signal generating chars, and no extended chars (^V, 
+		 * ^O, ^R, ^W).
+		 */
+		tty.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
 		tty.c_oflag = 0;	/* Transparent output */
 
 		tty.c_cflag &= ~(PARENB);	/* Same baud rate, disable parity */

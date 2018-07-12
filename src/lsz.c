@@ -230,9 +230,10 @@ bibi (int n)
 
 /* Called when ZMODEM gets an interrupt (^C) */
 static void
-onintr(int n LRZSZ_ATTRIB_UNUSED)
+onintr(int n)
 {
 	signal(SIGINT, SIG_IGN);
+	n++; /* use it */
 	// FIXME: how do I work around this?
 	// longjmp(sz->intrjmp, -1);
 }
@@ -1156,6 +1157,7 @@ sz_transmit_file_by_zmodem(sz_t *sz, struct zm_fileinfo *zi, const char *buf, si
 		 * with ZMODEM Conversion, Management, and Transport
 		 * options followed by a ZCRCW data subpacket
 		 * containing the file name, ...." */
+		int gotblock, gotchar;
 		sz->zm->Txhdr[ZF0] = sz->lzconv;	/* file conversion request */
 		sz->zm->Txhdr[ZF1] = sz->lzmanag;	/* file management request */
 		if (sz->lskipnocor)
@@ -1165,11 +1167,11 @@ sz_transmit_file_by_zmodem(sz_t *sz, struct zm_fileinfo *zi, const char *buf, si
 		zm_send_binary_header(sz->zm, ZFILE);
 		ZM_SEND_DATA(buf, blen, ZCRCW);
 again:
-		c = zm_get_header(sz->zm, &rxpos);
-		switch (c) {
+		gotblock = zm_get_header(sz->zm, &rxpos);
+		switch (gotblock) {
 		case ZRINIT:
-			while ((c = zreadline_getc(sz->zm->zr, 50)) > 0)
-				if (c == ZPAD) {
+			while ((gotchar = zreadline_getc(sz->zm->zr, 50)) > 0)
+				if (gotchar == ZPAD) {
 					goto again;
 				}
 			/* **** FALL THRU TO **** */
@@ -1200,7 +1202,7 @@ again:
 			if (!sz->mm_addr)
 			{
 				struct stat st;
-				if (fstat (fileno (sz->input_f), &st) == 0) {
+				if (fstat (fileno (sz->input_f), &st) == 0 && st.st_size != 0) {
 					sz->mm_size = st.st_size;
 					sz->mm_addr = mmap (0, sz->mm_size, PROT_READ,
 									MAP_SHARED, fileno (sz->input_f), 0);
@@ -1230,8 +1232,8 @@ again:
 					} else
 						rxpos=-1;
 				}
-				while (rxpos-- && ((c = getc(sz->input_f)) != EOF))
-					crc = UPDC32(c, crc);
+				while (rxpos-- && ((gotchar = getc(sz->input_f)) != EOF))
+					crc = UPDC32(gotchar, crc);
 				crc = ~crc;
 				clearerr(sz->input_f);	/* Clear EOF */
 				fseek(sz->input_f, 0L, 0);
@@ -1244,15 +1246,17 @@ again:
 		 * size, etc are acceptable] The receiver may respond
 		 * with a ZSKIP header, which makes the sender proceed
 		 * to the next file (if any)." */
-			if (sz->input_f)
+			if (sz->input_f) {
 				fclose(sz->input_f);
+				sz->input_f=NULL;
+			}
 			else if (sz->mm_addr) {
 				munmap(sz->mm_addr,sz->mm_size);
 				sz->mm_addr=NULL;
 			}
 
 			log_debug("receiver skipped");
-			return c;
+			return ZSKIP;
 		case ZRPOS:
 			/* Spec 8.2: "A ZRPOS header from the receiver
 			 * initiates transmittion of the file data
@@ -1297,7 +1301,7 @@ sz_transmit_file_contents_by_zmodem (sz_t *sz, struct zm_fileinfo *zi)
 	if (!sz->mm_addr)
 	{
 		struct stat st;
-		if (fstat (fileno (sz->input_f), &st) == 0) {
+		if (fstat (fileno (sz->input_f), &st) == 0 && st.st_size != 0) {
 			sz->mm_size = st.st_size;
 			sz->mm_addr = mmap (0, sz->mm_size, PROT_READ,
 							MAP_SHARED, fileno (sz->input_f), 0);
@@ -1328,17 +1332,23 @@ sz_transmit_file_contents_by_zmodem (sz_t *sz, struct zm_fileinfo *zi)
 	  gotack:
 		switch (c) {
 		default:
-			if (sz->input_f)
+			if (sz->input_f) {
 				fclose (sz->input_f);
+				sz->input_f=NULL;
+			}
 			return ERROR;
 		case ZCAN:
-			if (sz->input_f)
+			if (sz->input_f) {
 				fclose (sz->input_f);
+				sz->input_f=NULL;
+			}
 			return ERROR;
 		case ZSKIP:
-			if (sz->input_f)
+			if (sz->input_f) {
 				fclose (sz->input_f);
-			return c;
+				sz->input_f=NULL;
+			}
+			return ZSKIP;
 		case ZACK:
 		case ZRPOS:
 			break;
@@ -1545,12 +1555,16 @@ sz_transmit_file_contents_by_zmodem (sz_t *sz, struct zm_fileinfo *zi)
 			 * it returns ZRINIT. */
 			return OK;
 		case ZSKIP:
-			if (sz->input_f)
+			if (sz->input_f) {
 				fclose (sz->input_f);
+				sz->input_f=NULL;
+			}
 			return c;
 		default:
-			if (sz->input_f)
+			if (sz->input_f) {
 				fclose (sz->input_f);
+				sz->input_f=NULL;
+			}
 			return ERROR;
 		}
 	}
@@ -1676,12 +1690,12 @@ calcit:
 static int
 sz_getinsync(sz_t *sz, struct zm_fileinfo *zi, int flag)
 {
-	int c;
 	uint32_t rxpos;
 
 	for (;;) {
-		c = zm_get_header(sz->zm, &rxpos);
-		switch (c) {
+		int gotblock;
+		gotblock = zm_get_header(sz->zm, &rxpos);
+		switch (gotblock) {
 		case ZCAN:
 		case ZABORT:
 		case ZFIN:
@@ -1703,7 +1717,7 @@ sz_getinsync(sz_t *sz, struct zm_fileinfo *zi, int flag)
 				sz->error_count++;
 			}
 			sz->lastsync = rxpos;
-			return c;
+			return ZRPOS;
 		case ZACK:
 			sz->lrxpos = rxpos;
 			if (flag || zi->bytes_sent == rxpos)
@@ -1711,13 +1725,15 @@ sz_getinsync(sz_t *sz, struct zm_fileinfo *zi, int flag)
 			continue;
 		case ZRINIT:
 		case ZSKIP:
-			if (sz->input_f)
+			if (sz->input_f) {
 				fclose(sz->input_f);
+				sz->input_f=NULL;
+			}
 			else if (sz->mm_addr) {
 				munmap(sz->mm_addr,sz->mm_size);
 				sz->mm_addr=NULL;
 			}
-			return c;
+			return ZSKIP;
 		case ERROR:
 		default:
 			sz->error_count++;
