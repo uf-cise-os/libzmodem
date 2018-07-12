@@ -51,7 +51,7 @@
 #define MAX_BLOCK 8192
 
 // UGLY HACK: temporary variable for storing jump buffer until a more object-oriented solution is found. FIXME!
-jmp_buf hack_intrjmp;
+struct __jmp_buf_tag *hack_intrjmp;
 
 struct sz_ {
 	zm_t *zm;		/* zmodem comm primitives' state */
